@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Madame Lara's Vault</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Telegram Web App Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="game-container">
+        <!-- Status Bar: Points and Multipliers -->
+        <div class="status-bar">
+            <div class="user-info">
+                <span>SLAVE STATUS</span>
+            </div>
+            <div class="score-box">
+                <span class="icon">💎</span>
+                <span id="score-display">0</span>
+            </div>
+            <div class="multiplier-box">
+                <span id="multiplier-display">x1.00</span>
+            </div>
+            <div class="timer-box">
+                <span class="icon">⏳</span>
+                <span id="timer-display">45s</span>
+            </div>
+        </div>
+
+        <!-- Main Game Screen (Active View) -->
+        <div id="game-screen" class="screen">
+            <!-- Madame Lara Image Target Area -->
+            <div id="lara-target-container">
+                <img id="lara-image" src="" alt="Madame Lara">
+                <div id="target-overlay">TAP TO OBEY</div>
+            </div>
+
+            <h2 id="task-name">Loading Task...</h2>
+
+            <!-- Obedience Progress Bar -->
+            <div class="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div id="progress-text">0 / 0</div>
+        </div>
+
+        <!-- Lobby Screen (Start / Timeout View) -->
+        <div id="lobby-screen" class="screen active">
+            <h1 class="welcome-title">Madame Lara's Chamber</h1>
+            <p class="welcome-desc">Prove your absolute obedience to earn her diamonds.</p>
+            <button id="start-btn">Obey Madame Lara (Start)</button>
+            <p id="bonus-notice" class="bonus-text"></p>
+        </div>
+
+        <!-- Reward Overlay Window -->
+        <div id="reward-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>SUCCESS!</h2>
+                <p id="reward-desc">You have pleased Madame Lara.</p>
+                <p id="reward-points" class="points-earned">+0 Diamonds</p>
+                <button id="claim-btn">Claim & Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Logic Script -->
+    <script src="app.js"></script>
+</body>
+</html>
