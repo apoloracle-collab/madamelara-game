@@ -212,11 +212,22 @@ function endGame(isSuccess) {
 // --- CLAIM BUTTON TRIGGER EVENT ---
 claimBtn.addEventListener('click', () => {
     if (!currentTask) return;
+    
+    // 1. Add and save points
     totalCoins += currentTask.reward;
     updateHeaderStats();
-    
-    // Save the updated coins to Supabase.
-    saveCoinsToDatabase(); 
+    saveCoinsToDatabase();
+
+    // 2. FORCE CLOSE the success modal
+    rewardModal.classList.add('hidden');
+
+    // 3. Energy Check and Redirection
+    if (currentEnergy <= 0) {
+        initLobby(); // Return to lobby in the background
+        document.getElementById('energy-modal').classList.remove('hidden'); // Show ad modal cleanly
+    } else {
+        initLobby(); // Return to lobby if energy is available
+    }
 });
 
 // --- BUTTON INTERACTION TRIGGERS ---
