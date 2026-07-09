@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Madame Lara's Vault</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Telegram Web App Script -->
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <div id="game-container">
-        <!-- Status Bar: Points and Multipliers -->
         <div class="status-bar">
             <div class="user-info">
                 <span>SLAVE STATUS</span>
@@ -28,9 +28,7 @@
             </div>
         </div>
 
-        <!-- Main Game Screen (Active View) -->
         <div id="game-screen" class="screen">
-            <!-- Madame Lara Image Target Area -->
             <div id="lara-target-container">
                 <img id="lara-image" src="" alt="Madame Lara">
                 <div id="target-overlay">TAP TO OBEY</div>
@@ -38,22 +36,19 @@
 
             <h2 id="task-name">Loading Task...</h2>
 
-            <!-- Obedience Progress Bar -->
             <div class="progress-container">
                 <div id="progress-bar"></div>
             </div>
             <div id="progress-text">0 / 0</div>
         </div>
 
-        <!-- Lobby Screen (Start / Timeout View) -->
         <div id="lobby-screen" class="screen active">
             <h1 class="welcome-title">Madame Lara's Chamber</h1>
             <p class="welcome-desc">Prove your absolute obedience to earn her diamonds.</p>
-            <button id="start-btn">Obey Madame Lara (Start)</button>
+            <button id="start-btn" disabled>Loading Data...</button>
             <p id="bonus-notice" class="bonus-text"></p>
         </div>
 
-        <!-- Reward Overlay Window -->
         <div id="reward-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>SUCCESS!</h2>
@@ -64,7 +59,6 @@
         </div>
     </div>
 
-    <!-- Main Game Logic Script -->
     <script src="app.js"></script>
 </body>
 </html>

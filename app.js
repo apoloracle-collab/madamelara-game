@@ -1,20 +1,30 @@
 // --- INITIALIZE TELEGRAM WEB APP ---
 const tg = window.Telegram?.WebApp;
 if (tg) {
-    tg.expand(); // Forces the app to open in full screen inside Telegram
+    tg.expand();
+    tg.ready();
 }
 
-// --- GAME CONFIGURATION (LARA TASKS & IMAGES) ---
+// Get Telegram ID. Assign a test ID if opened outside Telegram to prevent errors.
+const telegramUserId = tg?.initDataUnsafe?.user?.id || 123456789;
+
+// --- SUPABASE CONFIGURATION ---
+// ATTENTION: Paste the Project URL and Publishable Key from your Supabase dashboard here.
+const supabaseUrl = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
+const supabaseKey = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+// --- GAME CONFIGURATION ---
 const laraTasks = [
     { id: 'lara_intro', name: 'First Encounter', maxBar: 50, reward: 5, image: 'lara_resim1.png' },
     { id: 'lara_leather', name: 'Sharp Glances', maxBar: 100, reward: 15, image: 'lara_resim2.png' },
     { id: 'lara_throne', name: 'Queen Throne', maxBar: 200, reward: 40, image: 'lara_resim3.png' }
 ];
 
-// --- DATABASE STATES (To be connected with Supabase/Backend later) ---
+// --- DATABASE STATES ---
 let totalCoins = 0;
-let activeMultiplier = 1.0; // Default multiplier. Shop items will upgrade this (e.g. 1.20)
-let extraTime = 0;          // Default extra time. Shop items will upgrade this (e.g. +30)
+let activeMultiplier = 1.0; 
+let extraTime = 0;          
 
 // --- GAMEPLAY LIVE STATES ---
 let timeLeft = 45;
@@ -41,10 +51,51 @@ const rewardDesc = document.getElementById('reward-desc');
 const claimBtn = document.getElementById('claim-btn');
 const laraTargetContainer = document.getElementById('lara-target-container');
 
-// --- SIMULATE SHOP BONUS FOR TESTING ---
-// Uncomment the lines below to test your specific shop item power (+%20 multiplier & +30s time)
-// activeMultiplier = 1.20;
-// extraTime = 30;
+// --- DATABASE FUNCTIONS ---
+async function loadUserData() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('slaves')
+            .select('total_points, active_multiplier')
+            .eq('telegram_id', telegramUserId)
+            .single();
+
+        if (error) throw error;
+
+        if (data) {
+            totalCoins = data.total_points || 0;
+            activeMultiplier = data.active_multiplier || 1.0;
+        }
+    } catch (err) {
+        console.error("Error loading data from Supabase:", err.message);
+        // If no record exists (first time playing), keep default values.
+    } finally {
+        // Enable the Start button once data loading is complete.
+        startBtn.innerText = "Obey Madame Lara (Start)";
+        startBtn.disabled = false;
+        updateHeaderStats();
+    }
+}
+
+async function saveCoinsToDatabase() {
+    try {
+        claimBtn.innerText = "Saving...";
+        claimBtn.disabled = true;
+
+        const { error } = await supabaseClient
+            .from('slaves')
+            .update({ total_points: totalCoins })
+            .eq('telegram_id', telegramUserId);
+
+        if (error) throw error;
+    } catch (err) {
+        console.error("Error saving coins:", err.message);
+    } finally {
+        claimBtn.innerText = "Claim & Continue";
+        claimBtn.disabled = false;
+        startGame(); // Start a new game once saving is complete.
+    }
+}
 
 // --- UPDATE TOP HEADER STATS ---
 function updateHeaderStats() {
@@ -71,29 +122,25 @@ function startGame() {
     currentBar = 0;
     isGameActive = true;
     
-    // Select a random task from the array
     currentTask = laraTasks[Math.floor(Math.random() * laraTasks.length)];
     
-    // Set UI elements
     laraImage.src = currentTask.image;
     taskName.innerText = currentTask.name;
     timerDisplay.innerText = `${timeLeft}s`;
     
-    // Switch screens
     lobbyScreen.classList.remove('active');
     gameScreen.classList.add('active');
     rewardModal.classList.add('hidden');
     
     updateProgressBar();
     
-    // Start countdown game loop
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         timeLeft--;
         timerDisplay.innerText = `${timeLeft}s`;
         
         if (timeLeft <= 0) {
-            endGame(false); // Game over by timeout
+            endGame(false);
         }
     }, 1000);
 }
@@ -105,17 +152,15 @@ function updateProgressBar() {
     progressText.innerText = `${Math.floor(currentBar)} / ${currentTask.maxBar}`;
 }
 
-// --- CLICK HANDLE WITH MULTIPLIER ACTION ---
+// --- CLICK HANDLE ---
 laraTargetContainer.addEventListener('click', () => {
     if (!isGameActive || !currentTask) return;
     
-    // Base hit is 1 point * player shop multiplier multiplier (e.g. 1 * 1.20 = 1.2 progress per tap)
     const hitPower = 1 * activeMultiplier;
     currentBar += hitPower;
     
     updateProgressBar();
     
-    // Check if task is successfully fully cleared
     if (currentBar >= currentTask.maxBar) {
         endGame(true);
     }
@@ -127,12 +172,10 @@ function endGame(isSuccess) {
     clearInterval(timerInterval);
     
     if (isSuccess) {
-        // Trigger success reward popup windows
         rewardDesc.innerText = `You have successfully completed "${currentTask.name}" and pleased Madame Lara.`;
         rewardPoints.innerText = `+${currentTask.reward} Diamonds`;
         rewardModal.classList.remove('hidden');
     } else {
-        // Handle timeout reset back to lobby screen
         alert("Time is up! You failed to please Madame Lara.");
         initLobby();
     }
@@ -141,13 +184,11 @@ function endGame(isSuccess) {
 // --- CLAIM BUTTON TRIGGER EVENT ---
 claimBtn.addEventListener('click', () => {
     if (!currentTask) return;
-    
-    // Update local variables (Will be push request to Supabase API later)
     totalCoins += currentTask.reward;
     updateHeaderStats();
     
-    // Instantly generate and auto-start next random game task loops
-    startGame();
+    // Save the updated coins to Supabase.
+    saveCoinsToDatabase(); 
 });
 
 // --- BUTTON INTERACTION TRIGGERS ---
@@ -155,3 +196,4 @@ startBtn.addEventListener('click', startGame);
 
 // --- STARTUP APP BOOT ---
 initLobby();
+loadUserData(); // Fetch the latest score from the database on startup.
