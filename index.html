@@ -26,6 +26,10 @@
                 <span class="icon">⏳</span>
                 <span id="timer-display">45s</span>
             </div>
+            <div class="energy-box">
+                <span class="icon">⚡</span>
+                <span id="energy-display">5/5</span>
+            </div>
         </div>
 
         <div id="game-screen" class="screen">
@@ -58,7 +62,18 @@
             </div>
         </div>
     </div>
-
+<div id="energy-modal" class="modal hidden">
+    <div class="modal-content" style="text-align: center; border: 1px solid #ff4757;">
+        <h2 style="color: #ff4757; margin-bottom: 10px;">Out of Energy</h2>
+        <p style="margin-bottom: 20px;">Madame Lara has no time for you right now. Wait at the door or prove your loyalty.</p>
+        <button id="watch-ad-btn" class="action-btn" style="background: linear-gradient(45deg, #ff4757, #ff6b81); width: 100%; margin-bottom: 10px;">
+            📺 Watch Ad & Refill Energy
+        </button>
+        <button id="close-energy-modal" class="action-btn" style="background: transparent; border: 1px solid #ccc; width: 100%;">
+            Close
+        </button>
+    </div>
+</div>
     <script src="app.js"></script>
 </body>
 </html>

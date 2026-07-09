@@ -15,10 +15,13 @@ const supabaseKey = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 // --- GAME CONFIGURATION ---
+let currentEnergy = 5;
+let maxEnergy = 5;
+
 const laraTasks = [
-    { id: 'lara_intro', name: 'First Encounter', maxBar: 50, reward: 5, image: 'lara_resim1.png' },
-    { id: 'lara_leather', name: 'Sharp Glances', maxBar: 100, reward: 15, image: 'lara_resim2.png' },
-    { id: 'lara_throne', name: 'Queen Throne', maxBar: 200, reward: 40, image: 'lara_resim3.png' }
+    { id: 'lara_intro', name: 'First Encounter', maxBar: 50, reward: 5, timeLimit: 15, images: ['lara_50_1.png', 'lara_50_2.png', 'lara_50_3.png'] },
+    { id: 'lara_leather', name: 'Sharp Glances', maxBar: 100, reward: 15, timeLimit: 25, images: ['lara_100_1.png', 'lara_100_2.png', 'lara_100_3.png'] },
+    { id: 'lara_throne', name: 'Queen Throne', maxBar: 200, reward: 40, timeLimit: 40, images: ['lara_200_1.png', 'lara_200_2.png', 'lara_200_3.png'] }
 ];
 
 // --- DATABASE STATES ---
@@ -56,7 +59,7 @@ async function loadUserData() {
     try {
         const { data, error } = await supabaseClient
             .from('slaves')
-            .select('total_points, active_multiplier')
+            .select('total_points, active_multiplier, energy, max_energy')
             .eq('telegram_id', telegramUserId)
             .single();
 
@@ -65,6 +68,10 @@ async function loadUserData() {
         if (data) {
             totalCoins = data.total_points || 0;
             activeMultiplier = data.active_multiplier || 1.0;
+            currentEnergy = data.energy !== null ? data.energy : 5;
+            maxEnergy = data.max_energy || 5;
+            
+            document.getElementById('energy-display').innerText = `${currentEnergy}/${maxEnergy}`;
         }
     } catch (err) {
         console.error("Error loading data from Supabase:", err.message);
@@ -116,22 +123,43 @@ function initLobby() {
     }
 }
 
+async function saveEnergyToDatabase() {
+    if (!telegramUserId) return;
+    await supabaseClient.from('slaves').update({ energy: currentEnergy }).eq('telegram_id', telegramUserId);
+}
+
 // --- START GAME MECHANIC ---
 function startGame() {
-    timeLeft = 45 + extraTime;
-    currentBar = 0;
-    isGameActive = true;
-    
+    // 1. Enerji Kontrolü
+    if (currentEnergy <= 0) {
+        document.getElementById('energy-modal').classList.remove('hidden');
+        return; // Enerji yoksa oyunu durdur ve uyarı ver
+    }
+
+    // 2. Enerjiyi düşür, ekrana yaz ve veritabanına kaydet
+    currentEnergy--;
+    document.getElementById('energy-display').innerText = `${currentEnergy}/${maxEnergy}`;
+    saveEnergyToDatabase();
+
+    // 3. Görevi Seç
     currentTask = laraTasks[Math.floor(Math.random() * laraTasks.length)];
     
-    laraImage.src = currentTask.image;
+    // 4. Süreyi göreve göre dinamik ayarla (Artık 45 saniye sabit değil)
+    timeLeft = currentTask.timeLimit + extraTime;
+    currentBar = 0;
+    isGameActive = true;
+
+    // 5. Görsel Havuzundan Rastgele Seçim
+    const randomImgIndex = Math.floor(Math.random() * currentTask.images.length);
+    laraImage.src = 'assets/' + currentTask.images[randomImgIndex];
+
     taskName.innerText = currentTask.name;
     timerDisplay.innerText = `${timeLeft}s`;
-    
+
     lobbyScreen.classList.remove('active');
     gameScreen.classList.add('active');
     rewardModal.classList.add('hidden');
-    
+
     updateProgressBar();
     
     clearInterval(timerInterval);
@@ -197,3 +225,6 @@ startBtn.addEventListener('click', startGame);
 // --- STARTUP APP BOOT ---
 initLobby();
 loadUserData(); // Fetch the latest score from the database on startup.
+document.getElementById('close-energy-modal').addEventListener('click', () => {
+    document.getElementById('energy-modal').classList.add('hidden');
+});
