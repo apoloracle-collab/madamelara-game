@@ -117,7 +117,6 @@ async function saveCoinsToDatabase() {
             claimBtn.innerText = "Claim & Continue";
             claimBtn.disabled = false;
         }
-        // FIXED: Redirects smoothly back to layout updates rather than auto-starting a session loop
         initLobby();
     }
 }
@@ -247,7 +246,6 @@ if (claimBtn) {
         
         if (rewardModal) rewardModal.classList.add('hidden');
         
-        // Triggers database synchronization and falls back securely to lobby layout updates
         saveCoinsToDatabase();
 
         if (currentEnergy <= 0 && energyModal) {
@@ -271,10 +269,8 @@ if (closeEnergyModalBtn) {
 // ==========================================================================
 if (watchAdBtn) {
     watchAdBtn.addEventListener('click', () => {
-        // Intercept action cleanly if SDK script isn't loaded completely
         if (!window.Adsgram) {
             alert("Ad network is currently loading. Please try again in a few seconds.");
-            console.error("Adsgram SDK is not defined on the window object reference.");
             return;
         }
 
@@ -283,8 +279,8 @@ if (watchAdBtn) {
         watchAdBtn.style.opacity = "0.7";
         watchAdBtn.style.pointerEvents = "none";
 
-        // FIXED: Re-mapped to official, active Production Block ID safely
-        const AdController = window.Adsgram.init({ blockId: "37912" });
+        // UPDATED: Connected to new Block ID: 37958
+        const AdController = window.Adsgram.init({ blockId: "37958" });
 
         AdController.show()
             .then(async (result) => {
@@ -302,8 +298,6 @@ if (watchAdBtn) {
 
                 if (energyModal) energyModal.classList.add('hidden');
                 initLobby();
-                
-                console.log("Ad successfully watched. Reward granted:", result);
             })
             .catch((result) => {
                 watchAdBtn.innerText = originalText;
@@ -311,7 +305,6 @@ if (watchAdBtn) {
                 watchAdBtn.style.pointerEvents = "auto";
                 
                 alert("Ad reward could not be claimed. Please watch the video until the end.");
-                console.log("Ad interaction failed or rejected:", result);
             });
     });
 }
