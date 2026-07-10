@@ -4,15 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Madame Lara's Vault</title>
+    
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- FIXED: Corrected Adsgram SDK script file source name -->
-    <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js?v=1.1"></script>
+    <script src="https://sad.adsgram.ai/js/adsgram-ad-sdk.js"></script>
 </head>
 <body>
     <div id="game-container">
+        
         <div class="status-bar">
             <div class="user-info">
                 <span>SLAVE STATUS</span>
@@ -64,18 +65,20 @@
             </div>
         </div>
     </div>
-<div id="energy-modal" class="modal hidden">
-    <div class="modal-content" style="text-align: center; border: 1px solid #ff4757;">
-        <h2 style="color: #ff4757; margin-bottom: 10px;">Out of Energy</h2>
-        <p style="margin-bottom: 20px;">Madame Lara has no time for you right now. Wait at the door or prove your loyalty.</p>
-        <button id="watch-ad-btn" class="action-btn" style="background: linear-gradient(45deg, #ff4757, #ff6b81); width: 100%; margin-bottom: 10px;">
-            📺 Watch Ad & Refill Energy
-        </button>
-        <button id="close-energy-modal" class="action-btn" style="background: transparent; border: 1px solid #ccc; width: 100%;">
-            Close
-        </button>
+
+    <div id="energy-modal" class="modal hidden">
+        <div class="modal-content" style="text-align: center; border: 1px solid #ff4757;">
+            <h2 style="color: #ff4757; margin-bottom: 10px;">Out of Energy</h2>
+            <p style="margin-bottom: 20px;">Madame Lara has no time for you right now. Wait at the door or prove your loyalty.</p>
+            <button id="watch-ad-btn" class="action-btn" style="background: linear-gradient(45deg, #ff4757, #ff6b81); width: 100%; margin-bottom: 10px;">
+                📺 Watch Ad & Refill Energy
+            </button>
+            <button id="close-energy-modal" class="action-btn" style="background: transparent; border: 1px solid #ccc; width: 100%;">
+                Close
+            </button>
+        </div>
     </div>
-</div>
+
     <script src="app.js"></script>
 </body>
 </html>

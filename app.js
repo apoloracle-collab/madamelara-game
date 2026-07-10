@@ -1,20 +1,25 @@
-// --- INITIALIZE TELEGRAM WEB APP ---
+// ==========================================================================
+// 1. TELEGRAM WEB APP INITIALIZATION
+// ==========================================================================
 const tg = window.Telegram?.WebApp;
 if (tg) {
     tg.expand();
     tg.ready();
 }
 
-// Get Telegram ID. Assign a test ID if opened outside Telegram to prevent errors.
+// Global user identifier fallback for localized development test beds
 const telegramUserId = tg?.initDataUnsafe?.user?.id || 123456789;
 
-// --- SUPABASE CONFIGURATION ---
-// ATTENTION: Paste the Project URL and Publishable Key from your Supabase dashboard here.
+// ==========================================================================
+// 2. SUPABASE ECOSYSTEM CONFIGURATION
+// ==========================================================================
 const supabaseUrl = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
 const supabaseKey = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-// --- GAME CONFIGURATION ---
+// ==========================================================================
+// 3. CORE GAME CONFIGURATION & STATES
+// ==========================================================================
 let currentEnergy = 5;
 let maxEnergy = 5;
 
@@ -24,19 +29,19 @@ const laraTasks = [
     { id: 'lara_throne', name: 'Queen Throne', maxBar: 200, reward: 40, timeLimit: 40, images: ['lara_200_1.png', 'lara_200_2.png', 'lara_200_3.png'] }
 ];
 
-// --- DATABASE STATES ---
 let totalCoins = 0;
 let activeMultiplier = 1.0; 
 let extraTime = 0;          
 
-// --- GAMEPLAY LIVE STATES ---
 let timeLeft = 45;
 let isGameActive = false;
 let currentTask = null;
 let currentBar = 0;
 let timerInterval = null;
 
-// --- DOM ELEMENTS ---
+// ==========================================================================
+// 4. DOM RESOURCE MAPPINGS
+// ==========================================================================
 const scoreDisplay = document.getElementById('score-display');
 const multiplierDisplay = document.getElementById('multiplier-display');
 const timerDisplay = document.getElementById('timer-display');
@@ -53,8 +58,14 @@ const rewardPoints = document.getElementById('reward-points');
 const rewardDesc = document.getElementById('reward-desc');
 const claimBtn = document.getElementById('claim-btn');
 const laraTargetContainer = document.getElementById('lara-target-container');
+const energyDisplay = document.getElementById('energy-display');
+const energyModal = document.getElementById('energy-modal');
+const watchAdBtn = document.getElementById('watch-ad-btn');
+const closeEnergyModalBtn = document.getElementById('close-energy-modal');
 
-// --- DATABASE FUNCTIONS ---
+// ==========================================================================
+// 5. SUPABASE CLOUD FILE & INVENTORY SYNC
+// ==========================================================================
 async function loadUserData() {
     try {
         const { data, error } = await supabaseClient
@@ -71,22 +82,27 @@ async function loadUserData() {
             currentEnergy = data.energy !== null ? data.energy : 5;
             maxEnergy = data.max_energy || 5;
             
-            document.getElementById('energy-display').innerText = `${currentEnergy}/${maxEnergy}`;
+            if (energyDisplay) {
+                energyDisplay.innerText = `${currentEnergy}/${maxEnergy}`;
+            }
         }
     } catch (err) {
-        console.error("Error loading data from Supabase:", err.message);
+        console.error("Error fetching remote data from Supabase instance:", err.message);
     } finally {
-        // Enable the Start button once data loading is complete.
-        startBtn.innerText = "Obey Madame Lara (Start)";
-        startBtn.disabled = false;
+        if (startBtn) {
+            startBtn.innerText = "Obey Madame Lara (Start)";
+            startBtn.disabled = false;
+        }
         updateHeaderStats();
     }
 }
 
 async function saveCoinsToDatabase() {
     try {
-        claimBtn.innerText = "Saving...";
-        claimBtn.disabled = true;
+        if (claimBtn) {
+            claimBtn.innerText = "Saving Data...";
+            claimBtn.disabled = true;
+        }
 
         const { error } = await supabaseClient
             .from('slaves')
@@ -95,76 +111,87 @@ async function saveCoinsToDatabase() {
 
         if (error) throw error;
     } catch (err) {
-        console.error("Error saving coins:", err.message);
+        console.error("Critical trace on saving transactional coin balances:", err.message);
     } finally {
-        claimBtn.innerText = "Claim & Continue";
-        claimBtn.disabled = false;
-        startGame(); // Start a new game once saving is complete.
-    }
-}
-
-// --- UPDATE TOP HEADER STATS ---
-function updateHeaderStats() {
-    scoreDisplay.innerText = Math.floor(totalCoins);
-    multiplierDisplay.innerText = `x${activeMultiplier.toFixed(2)}`;
-}
-
-// --- SETUP LOBBY SCREEN VIEW ---
-function initLobby() {
-    updateHeaderStats();
-    lobbyScreen.classList.add('active');
-    gameScreen.classList.remove('active');
-    
-    if (extraTime > 0) {
-        bonusNotice.innerText = `Duration: 45s (+${extraTime}s Shop Bonus Active)`;
-    } else {
-        bonusNotice.innerText = `Duration: 45s`;
+        if (claimBtn) {
+            claimBtn.innerText = "Claim & Continue";
+            claimBtn.disabled = false;
+        }
+        // FIXED: Redirects smoothly back to layout updates rather than auto-starting a session loop
+        initLobby();
     }
 }
 
 async function saveEnergyToDatabase() {
     if (!telegramUserId) return;
-    await supabaseClient.from('slaves').update({ energy: currentEnergy }).eq('telegram_id', telegramUserId);
+    try {
+        await supabaseClient
+            .from('slaves')
+            .update({ energy: currentEnergy })
+            .eq('telegram_id', telegramUserId);
+    } catch (err) {
+        console.error("Error executing safe energy serialization update script:", err.message);
+    }
 }
 
-// --- START GAME MECHANIC ---
+// ==========================================================================
+// 6. DASHBOARD DESIGN AND HEADER RENDER LOOKUPS
+// ==========================================================================
+function updateHeaderStats() {
+    if (scoreDisplay) scoreDisplay.innerText = Math.floor(totalCoins);
+    if (multiplierDisplay) multiplierDisplay.innerText = `x${activeMultiplier.toFixed(2)}`;
+}
+
+function initLobby() {
+    updateHeaderStats();
+    if (lobbyScreen) lobbyScreen.classList.add('active');
+    if (gameScreen) gameScreen.classList.remove('active');
+    
+    if (bonusNotice) {
+        if (extraTime > 0) {
+            bonusNotice.innerText = `Duration: 45s (+${extraTime}s Shop Bonus Active)`;
+        } else {
+            bonusNotice.innerText = `Duration: 45s`;
+        }
+    }
+}
+
+// ==========================================================================
+// 7. CORE GAME LOOPS AND TRANSACTION TRIGGERS
+// ==========================================================================
 function startGame() {
-    // 1. Energy Check
     if (currentEnergy <= 0) {
-        document.getElementById('energy-modal').classList.remove('hidden');
+        if (energyModal) energyModal.classList.remove('hidden');
         return; 
     }
 
-    // 2. Decrease energy, update UI and sync with Supabase
     currentEnergy--;
-    document.getElementById('energy-display').innerText = `${currentEnergy}/${maxEnergy}`;
+    if (energyDisplay) {
+        energyDisplay.innerText = `${currentEnergy}/${maxEnergy}`;
+    }
     saveEnergyToDatabase();
 
-    // 3. Task Selection
     currentTask = laraTasks[Math.floor(Math.random() * laraTasks.length)];
-    
-    // 4. Dynamic Time Configuration
     timeLeft = currentTask.timeLimit + extraTime;
     currentBar = 0;
     isGameActive = true;
 
-    // 5. Random Visual Asset Selection
     const randomImgIndex = Math.floor(Math.random() * currentTask.images.length);
-    laraImage.src = 'assets/' + currentTask.images[randomImgIndex];
+    if (laraImage) laraImage.src = 'assets/' + currentTask.images[randomImgIndex];
 
-    taskName.innerText = currentTask.name;
-    timerDisplay.innerText = `${timeLeft}s`;
+    if (taskName) taskName.innerText = currentTask.name;
+    if (timerDisplay) timerDisplay.innerText = `${timeLeft}s`;
 
-    lobbyScreen.classList.remove('active');
-    gameScreen.classList.add('active');
-    rewardModal.classList.add('hidden');
+    if (lobbyScreen) lobbyScreen.classList.remove('active');
+    if (gameScreen) gameScreen.classList.add('active');
+    if (rewardModal) rewardModal.classList.add('hidden');
 
     updateProgressBar();
     
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         timeLeft--;
-        timerDisplay.innerText = `${timeLeft}s`;
+        if (timerDisplay) timerDisplay.innerText = `${timeLeft}s`;
         
         if (timeLeft <= 0) {
             endGame(false);
@@ -172,87 +199,82 @@ function startGame() {
     }, 1000);
 }
 
-// --- UPDATE PROGRESS BAR PROGRESS ---
 function updateProgressBar() {
+    if (!progressBar || !progressText || !currentTask) return;
     const percentage = (currentBar / currentTask.maxBar) * 100;
     progressBar.style.width = `${Math.min(percentage, 100)}%`;
     progressText.innerText = `${Math.floor(currentBar)} / ${currentTask.maxBar}`;
 }
 
-// --- CLICK HANDLE ---
-laraTargetContainer.addEventListener('click', () => {
-    if (!isGameActive || !currentTask) return;
-    
-    const hitPower = 1 * activeMultiplier;
-    currentBar += hitPower;
-    
-    updateProgressBar();
-    
-    if (currentBar >= currentTask.maxBar) {
-        endGame(true);
-    }
-});
+if (laraTargetContainer) {
+    laraTargetContainer.addEventListener('click', () => {
+        if (!isGameActive || !currentTask) return;
+        
+        const hitPower = 1 * activeMultiplier;
+        currentBar += hitPower;
+        
+        updateProgressBar();
+        
+        if (currentBar >= currentTask.maxBar) {
+            endGame(true);
+        }
+    });
+}
 
-// --- END GAME LOOP MECHANIC ---
 function endGame(isSuccess) {
     isGameActive = false;
     clearInterval(timerInterval);
     
     if (isSuccess) {
-        rewardDesc.innerText = `You have successfully completed "${currentTask.name}" and pleased Madame Lara.`;
-        rewardPoints.innerText = `+${currentTask.reward} Diamonds`;
-        rewardModal.classList.remove('hidden');
+        if (rewardDesc) rewardDesc.innerText = `You have successfully completed "${currentTask.name}" and pleased Madame Lara.`;
+        if (rewardPoints) rewardPoints.innerText = `+${currentTask.reward} Diamonds`;
+        if (rewardModal) rewardModal.classList.remove('hidden');
     } else {
         alert("Time is up! You failed to please Madame Lara.");
         initLobby();
     }
 }
 
-// --- CLAIM BUTTON TRIGGER EVENT ---
-claimBtn.addEventListener('click', () => {
-    if (!currentTask) return;
-    
-    // 1. Add and save points
-    totalCoins += currentTask.reward;
-    updateHeaderStats();
-    saveCoinsToDatabase();
+// ==========================================================================
+// 8. INTERACTIVE CLICK CAPTURING SUBSYSTEMS
+// ==========================================================================
+if (claimBtn) {
+    claimBtn.addEventListener('click', () => {
+        if (!currentTask) return;
+        
+        totalCoins += currentTask.reward;
+        updateHeaderStats();
+        
+        if (rewardModal) rewardModal.classList.add('hidden');
+        
+        // Triggers database synchronization and falls back securely to lobby layout updates
+        saveCoinsToDatabase();
 
-    // 2. FORCE CLOSE the success modal
-    rewardModal.classList.add('hidden');
-
-    // 3. Energy Check and Redirection
-    if (currentEnergy <= 0) {
-        initLobby(); 
-        document.getElementById('energy-modal').classList.remove('hidden'); 
-    } else {
-        initLobby(); 
-    }
-});
-
-// --- BUTTON INTERACTION TRIGGERS ---
-startBtn.addEventListener('click', startGame);
-
-// --- STARTUP APP BOOT ---
-initLobby();
-loadUserData(); 
-
-// Close energy modal handler
-const closeEnergyModalBtn = document.getElementById('close-energy-modal');
-if (closeEnergyModalBtn) {
-    closeEnergyModalBtn.addEventListener('click', () => {
-        document.getElementById('energy-modal').classList.add('hidden');
+        if (currentEnergy <= 0 && energyModal) {
+            energyModal.classList.remove('hidden'); 
+        }
     });
 }
 
-// --- REAL ADSGRAM INTEGRATION ---
-const watchAdBtn = document.getElementById('watch-ad-btn'); 
+if (startBtn) {
+    startBtn.addEventListener('click', startGame);
+}
 
+if (closeEnergyModalBtn) {
+    closeEnergyModalBtn.addEventListener('click', () => {
+        if (energyModal) energyModal.classList.add('hidden');
+    });
+}
+
+// ==========================================================================
+// 9. NATIVE ADSGRAM NETWORK INTEGRATION WIREFRAME
+// ==========================================================================
 if (watchAdBtn) {
     watchAdBtn.addEventListener('click', () => {
-        // Safe check: Is the Adsgram SDK fully loaded in the browser?
+        // Intercept action cleanly if SDK script isn't loaded completely
         if (!window.Adsgram) {
             alert("Ad network is currently loading. Please try again in a few seconds.");
-            console.error("Adsgram SDK is not defined on the window object.");
+            console.error("Adsgram SDK is not defined on the window object reference.");
             return;
         }
 
@@ -261,33 +283,29 @@ if (watchAdBtn) {
         watchAdBtn.style.opacity = "0.7";
         watchAdBtn.style.pointerEvents = "none";
 
-        // Initialize dynamically at the precise moment of user click
-        const AdController = window.Adsgram.init({ blockId: "1" });
+        // FIXED: Re-mapped to official, active Production Block ID safely
+        const AdController = window.Adsgram.init({ blockId: "37912" });
 
-        // Trigger real ad layout
         AdController.show()
             .then(async (result) => {
-                // 1. Maximize energy states instantly
                 currentEnergy = maxEnergy;
-                document.getElementById('energy-display').innerText = `${currentEnergy}/${maxEnergy}`;
+                if (energyDisplay) {
+                    energyDisplay.innerText = `${currentEnergy}/${maxEnergy}`;
+                }
                 updateHeaderStats();
                 
-                // 2. Sync and save fully restored energy values to Supabase
                 await saveEnergyToDatabase();
 
-                // 3. Revert button properties
                 watchAdBtn.innerText = originalText;
                 watchAdBtn.style.opacity = "1";
                 watchAdBtn.style.pointerEvents = "auto";
 
-                // 4. Close layout overlays and sync dashboard
-                document.getElementById('energy-modal').classList.add('hidden');
+                if (energyModal) energyModal.classList.add('hidden');
                 initLobby();
                 
                 console.log("Ad successfully watched. Reward granted:", result);
             })
             .catch((result) => {
-                // Revert interface properties if interaction gets aborted
                 watchAdBtn.innerText = originalText;
                 watchAdBtn.style.opacity = "1";
                 watchAdBtn.style.pointerEvents = "auto";
@@ -297,3 +315,9 @@ if (watchAdBtn) {
             });
     });
 }
+
+// ==========================================================================
+// 10. SYSTEM APPLICATION INGEST BOOTSTRAP
+// ==========================================================================
+initLobby();
+loadUserData();
