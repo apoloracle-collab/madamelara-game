@@ -239,3 +239,32 @@ loadUserData(); // Fetch the latest score from the database on startup.
 document.getElementById('close-energy-modal').addEventListener('click', () => {
     document.getElementById('energy-modal').classList.add('hidden');
 });
+// --- WATCH AD BUTTON (DUMMY SIMULATION) ---
+const watchAdBtn = document.getElementById('watch-ad-btn'); 
+
+if(watchAdBtn) {
+    watchAdBtn.addEventListener('click', () => {
+        // Butonun yazısını değiştir ve tıklanmasını geçici olarak kilitle
+        const originalText = watchAdBtn.innerText;
+        watchAdBtn.innerText = "Loading Ad... (3s)";
+        watchAdBtn.style.opacity = "0.7";
+        watchAdBtn.style.pointerEvents = "none"; 
+
+        // 3 saniye sonra olacaklar (Reklam bitti simülasyonu)
+        setTimeout(() => {
+            // 1. Enerjiyi 5/5 yap
+            currentEnergy = maxEnergy;
+            updateHeaderStats();
+            
+            // 2. Butonu eski haline getir
+            watchAdBtn.innerText = originalText;
+            watchAdBtn.style.opacity = "1";
+            watchAdBtn.style.pointerEvents = "auto";
+            
+            // 3. Uyarı ekranını kapat ve oyuna (lobiye) dön
+            document.getElementById('energy-modal').classList.add('hidden');
+            initLobby();
+            
+        }, 3000); // 3000 milisaniye = 3 saniye
+    });
+}
