@@ -262,7 +262,7 @@ if (watchAdBtn) {
         watchAdBtn.style.pointerEvents = "none";
 
         // Initialize dynamically at the precise moment of user click
-        const AdController = window.Adsgram.init({ blockId: "37912" });
+        const AdController = window.Adsgram.init({ blockId: "1" });
 
         // Trigger real ad layout
         AdController.show()
