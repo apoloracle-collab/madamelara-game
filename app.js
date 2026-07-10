@@ -248,14 +248,21 @@ if (closeEnergyModalBtn) {
 const watchAdBtn = document.getElementById('watch-ad-btn'); 
 
 if (watchAdBtn) {
-    // Initialize Adsgram controller once with your Unit ID
-    const AdController = window.Adsgram.init({ blockId: "37912" });
-
     watchAdBtn.addEventListener('click', () => {
+        // Safe check: Is the Adsgram SDK fully loaded in the browser?
+        if (!window.Adsgram) {
+            alert("Ad network is currently loading. Please try again in a few seconds.");
+            console.error("Adsgram SDK is not defined on the window object.");
+            return;
+        }
+
         const originalText = watchAdBtn.innerText;
         watchAdBtn.innerText = "Loading Ad...";
         watchAdBtn.style.opacity = "0.7";
         watchAdBtn.style.pointerEvents = "none";
+
+        // Initialize dynamically at the precise moment of user click
+        const AdController = window.Adsgram.init({ blockId: "37912" });
 
         // Trigger real ad layout
         AdController.show()
