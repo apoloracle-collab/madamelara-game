@@ -75,7 +75,6 @@ async function loadUserData() {
         }
     } catch (err) {
         console.error("Error loading data from Supabase:", err.message);
-        // If no record exists (first time playing), keep default values.
     } finally {
         // Enable the Start button once data loading is complete.
         startBtn.innerText = "Obey Madame Lara (Start)";
@@ -130,26 +129,26 @@ async function saveEnergyToDatabase() {
 
 // --- START GAME MECHANIC ---
 function startGame() {
-    // 1. Enerji Kontrolü
+    // 1. Energy Check
     if (currentEnergy <= 0) {
         document.getElementById('energy-modal').classList.remove('hidden');
-        return; // Enerji yoksa oyunu durdur ve uyarı ver
+        return; 
     }
 
-    // 2. Enerjiyi düşür, ekrana yaz ve veritabanına kaydet
+    // 2. Decrease energy, update UI and sync with Supabase
     currentEnergy--;
     document.getElementById('energy-display').innerText = `${currentEnergy}/${maxEnergy}`;
     saveEnergyToDatabase();
 
-    // 3. Görevi Seç
+    // 3. Task Selection
     currentTask = laraTasks[Math.floor(Math.random() * laraTasks.length)];
     
-    // 4. Süreyi göreve göre dinamik ayarla (Artık 45 saniye sabit değil)
+    // 4. Dynamic Time Configuration
     timeLeft = currentTask.timeLimit + extraTime;
     currentBar = 0;
     isGameActive = true;
 
-    // 5. Görsel Havuzundan Rastgele Seçim
+    // 5. Random Visual Asset Selection
     const randomImgIndex = Math.floor(Math.random() * currentTask.images.length);
     laraImage.src = 'assets/' + currentTask.images[randomImgIndex];
 
@@ -223,10 +222,10 @@ claimBtn.addEventListener('click', () => {
 
     // 3. Energy Check and Redirection
     if (currentEnergy <= 0) {
-        initLobby(); // Return to lobby in the background
-        document.getElementById('energy-modal').classList.remove('hidden'); // Show ad modal cleanly
+        initLobby(); 
+        document.getElementById('energy-modal').classList.remove('hidden'); 
     } else {
-        initLobby(); // Return to lobby if energy is available
+        initLobby(); 
     }
 });
 
@@ -235,36 +234,59 @@ startBtn.addEventListener('click', startGame);
 
 // --- STARTUP APP BOOT ---
 initLobby();
-loadUserData(); // Fetch the latest score from the database on startup.
-document.getElementById('close-energy-modal').addEventListener('click', () => {
-    document.getElementById('energy-modal').classList.add('hidden');
-});
-// --- WATCH AD BUTTON (DUMMY SIMULATION) ---
+loadUserData(); 
+
+// Close energy modal handler
+const closeEnergyModalBtn = document.getElementById('close-energy-modal');
+if (closeEnergyModalBtn) {
+    closeEnergyModalBtn.addEventListener('click', () => {
+        document.getElementById('energy-modal').classList.add('hidden');
+    });
+}
+
+// --- REAL ADSGRAM INTEGRATION ---
 const watchAdBtn = document.getElementById('watch-ad-btn'); 
 
-if(watchAdBtn) {
-    watchAdBtn.addEventListener('click', () => {
-        // Butonun yazısını değiştir ve tıklanmasını geçici olarak kilitle
-        const originalText = watchAdBtn.innerText;
-        watchAdBtn.innerText = "Loading Ad... (3s)";
-        watchAdBtn.style.opacity = "0.7";
-        watchAdBtn.style.pointerEvents = "none"; 
+if (watchAdBtn) {
+    // Initialize Adsgram controller once with your Unit ID
+    const AdController = window.Adsgram.init({ blockId: "37912" });
 
-        // 3 saniye sonra olacaklar (Reklam bitti simülasyonu)
-        setTimeout(() => {
-            // 1. Enerjiyi 5/5 yap
-            currentEnergy = maxEnergy;
-            updateHeaderStats();
-            
-            // 2. Butonu eski haline getir
-            watchAdBtn.innerText = originalText;
-            watchAdBtn.style.opacity = "1";
-            watchAdBtn.style.pointerEvents = "auto";
-            
-            // 3. Uyarı ekranını kapat ve oyuna (lobiye) dön
-            document.getElementById('energy-modal').classList.add('hidden');
-            initLobby();
-            
-        }, 3000); // 3000 milisaniye = 3 saniye
+    watchAdBtn.addEventListener('click', () => {
+        const originalText = watchAdBtn.innerText;
+        watchAdBtn.innerText = "Loading Ad...";
+        watchAdBtn.style.opacity = "0.7";
+        watchAdBtn.style.pointerEvents = "none";
+
+        // Trigger real ad layout
+        AdController.show()
+            .then(async (result) => {
+                // 1. Maximize energy states instantly
+                currentEnergy = maxEnergy;
+                document.getElementById('energy-display').innerText = `${currentEnergy}/${maxEnergy}`;
+                updateHeaderStats();
+                
+                // 2. Sync and save fully restored energy values to Supabase
+                await saveEnergyToDatabase();
+
+                // 3. Revert button properties
+                watchAdBtn.innerText = originalText;
+                watchAdBtn.style.opacity = "1";
+                watchAdBtn.style.pointerEvents = "auto";
+
+                // 4. Close layout overlays and sync dashboard
+                document.getElementById('energy-modal').classList.add('hidden');
+                initLobby();
+                
+                console.log("Ad successfully watched. Reward granted:", result);
+            })
+            .catch((result) => {
+                // Revert interface properties if interaction gets aborted
+                watchAdBtn.innerText = originalText;
+                watchAdBtn.style.opacity = "1";
+                watchAdBtn.style.pointerEvents = "auto";
+                
+                alert("Ad reward could not be claimed. Please watch the video until the end.");
+                console.log("Ad interaction failed or rejected:", result);
+            });
     });
 }
