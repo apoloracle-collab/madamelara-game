@@ -9,15 +9,14 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Resmi Adsgram SDK satırı düzeltildi -->
-    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 </head>
 <body>
     <div id="game-container">
         
+        <!-- TOP NAVIGATION BAR -->
         <div class="status-bar">
             <div class="user-info">
-                <span>SLAVE STATUS</span>
+                <span id="slave-status-text">SLAVE STATUS</span>
             </div>
             <div class="score-box">
                 <span class="icon">💎</span>
@@ -36,27 +35,66 @@
             </div>
         </div>
 
+        <!-- 1. GAMEPLAY ACTION SCREEN -->
         <div id="game-screen" class="screen">
             <div id="lara-target-container">
                 <img id="lara-image" src="" alt="Madame Lara">
                 <div id="target-overlay">TAP TO OBEY</div>
             </div>
-
             <h2 id="task-name">Loading Task...</h2>
-
             <div class="progress-container">
                 <div id="progress-bar"></div>
             </div>
             <div id="progress-text">0 / 0</div>
         </div>
 
+        <!-- 2. LOBBY MAIN SCREEN -->
         <div id="lobby-screen" class="screen active">
             <h1 class="welcome-title">Madame Lara's Chamber</h1>
             <p class="welcome-desc">Prove your absolute obedience to earn her diamonds.</p>
+            
             <button id="start-btn" disabled>Loading Data...</button>
             <p id="bonus-notice" class="bonus-text"></p>
+
+            <!-- Navigation Menu -->
+            <div class="lobby-menu">
+                <button id="nav-market-btn" class="menu-btn">🛍️ Secret Portal</button>
+                <button id="nav-profile-btn" class="menu-btn">🎖️ My Profile</button>
+            </div>
         </div>
 
+        <!-- 3. SECRET PORTAL (MARKET & GALLERY) -->
+        <div id="market-screen" class="screen">
+            <h2 class="screen-title">Secret Portal</h2>
+            <p class="screen-desc">Unlock Madame Lara's exclusive content with Telegram Stars (⭐️).</p>
+            
+            <div class="market-grid">
+                <div class="market-placeholder">Loading exclusive items...</div>
+            </div>
+            
+            <button id="back-from-market" class="action-btn back-btn">⬅ Back to Chamber</button>
+        </div>
+
+        <!-- 4. PROFILE & BADGES SCREEN -->
+        <div id="profile-screen" class="screen">
+            <h2 class="screen-title">My Profile</h2>
+            <p class="screen-desc">Your achievements and loyalty badges.</p>
+            
+            <div class="badges-grid" id="badges-container">
+                <div class="badge-item locked">
+                    <div class="badge-icon">🔒</div>
+                    <span>Night Owl</span>
+                </div>
+                <div class="badge-item locked">
+                    <div class="badge-icon">🔒</div>
+                    <span>Perfect Loyalty</span>
+                </div>
+            </div>
+            
+            <button id="back-from-profile" class="action-btn back-btn">⬅ Back to Chamber</button>
+        </div>
+
+        <!-- REWARD MODAL -->
         <div id="reward-modal" class="modal hidden">
             <div class="modal-content">
                 <h2>SUCCESS!</h2>
@@ -67,15 +105,28 @@
         </div>
     </div>
 
+    <!-- ENERGY DEVIATION MODAL (WAIT OR PAY) -->
     <div id="energy-modal" class="modal hidden">
         <div class="modal-content" style="text-align: center; border: 1px solid #ff4757;">
             <h2 style="color: #ff4757; margin-bottom: 10px;">Out of Energy</h2>
-            <p style="margin-bottom: 20px;">Madame Lara has no time for you right now. Wait at the door or prove your loyalty.</p>
-            <button id="watch-ad-btn" class="action-btn" style="background: linear-gradient(45deg, #ff4757, #ff6b81); width: 100%; margin-bottom: 10px;">
-                📺 Watch Ad & Refill Energy
+            <p style="margin-bottom: 15px;">Madame Lara is resting. Wait for your next audience or prove your devotion instantly.</p>
+            
+            <!-- Countdown Timer Area -->
+            <div class="wait-timer-box">
+                <span style="font-size: 12px; color: #aaa;">Time until next energy:</span>
+                <h3 id="energy-countdown" style="color: #fff; font-size: 24px; margin: 5px 0 20px 0;">00:00:00</h3>
+            </div>
+
+            <!-- Purchase Options -->
+            <button id="buy-energy-5" class="action-btn" style="background: linear-gradient(45deg, #1e90ff, #00bfff); width: 100%; margin-bottom: 10px;">
+                ⭐️ Refill 5 Energy (15 XTR)
             </button>
+            <button id="buy-energy-10" class="action-btn" style="background: linear-gradient(45deg, #8a2be2, #da70d6); width: 100%; margin-bottom: 15px;">
+                ⭐️ Refill 10 Energy (25 XTR)
+            </button>
+            
             <button id="close-energy-modal" class="action-btn" style="background: transparent; border: 1px solid #ccc; width: 100%;">
-                Close
+                Close & Wait
             </button>
         </div>
     </div>

@@ -7,8 +7,8 @@ if (tg) {
     tg.ready();
 }
 
-// Global user identifier fallback for localized development test beds
 const telegramUserId = tg?.initDataUnsafe?.user?.id || 123456789;
+const telegramUsername = tg?.initDataUnsafe?.user?.username || "Slave";
 
 // ==========================================================================
 // 2. SUPABASE ECOSYSTEM CONFIGURATION
@@ -39,6 +39,10 @@ let currentTask = null;
 let currentBar = 0;
 let timerInterval = null;
 
+// Energy wait timer (4 Hours = 14400 Seconds)
+let energyTimerInterval = null;
+let waitTimeRemaining = 14400; 
+
 // ==========================================================================
 // 4. DOM RESOURCE MAPPINGS
 // ==========================================================================
@@ -49,8 +53,16 @@ const laraImage = document.getElementById('lara-image');
 const taskName = document.getElementById('task-name');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
+const energyDisplay = document.getElementById('energy-display');
+const slaveStatusText = document.getElementById('slave-status-text');
+
+// Screens
 const lobbyScreen = document.getElementById('lobby-screen');
 const gameScreen = document.getElementById('game-screen');
+const marketScreen = document.getElementById('market-screen');
+const profileScreen = document.getElementById('profile-screen');
+
+// Buttons & Modals
 const startBtn = document.getElementById('start-btn');
 const bonusNotice = document.getElementById('bonus-notice');
 const rewardModal = document.getElementById('reward-modal');
@@ -58,10 +70,19 @@ const rewardPoints = document.getElementById('reward-points');
 const rewardDesc = document.getElementById('reward-desc');
 const claimBtn = document.getElementById('claim-btn');
 const laraTargetContainer = document.getElementById('lara-target-container');
-const energyDisplay = document.getElementById('energy-display');
+
+// Navigation Buttons
+const navMarketBtn = document.getElementById('nav-market-btn');
+const navProfileBtn = document.getElementById('nav-profile-btn');
+const backFromMarket = document.getElementById('back-from-market');
+const backFromProfile = document.getElementById('back-from-profile');
+
+// Energy Modal & Purchase Buttons
 const energyModal = document.getElementById('energy-modal');
-const watchAdBtn = document.getElementById('watch-ad-btn');
+const energyCountdown = document.getElementById('energy-countdown');
 const closeEnergyModalBtn = document.getElementById('close-energy-modal');
+const buyEnergy5Btn = document.getElementById('buy-energy-5');
+const buyEnergy10Btn = document.getElementById('buy-energy-10');
 
 // ==========================================================================
 // 5. SUPABASE CLOUD FILE & INVENTORY SYNC
@@ -82,12 +103,16 @@ async function loadUserData() {
             currentEnergy = data.energy !== null ? data.energy : 5;
             maxEnergy = data.max_energy || 5;
             
-            if (energyDisplay) {
-                energyDisplay.innerText = `${currentEnergy}/${maxEnergy}`;
+            updateEnergyUI();
+            
+            // Update title if VIP status exists
+            if(maxEnergy > 5) {
+                if(slaveStatusText) slaveStatusText.innerHTML = "👑 VIP FOLLOWER";
+                if(slaveStatusText) slaveStatusText.style.color = "#d4af37";
             }
         }
     } catch (err) {
-        console.error("Error fetching remote data from Supabase instance:", err.message);
+        console.error("Database fetch error:", err.message);
     } finally {
         if (startBtn) {
             startBtn.innerText = "Obey Madame Lara (Start)";
@@ -99,25 +124,18 @@ async function loadUserData() {
 
 async function saveCoinsToDatabase() {
     try {
-        if (claimBtn) {
-            claimBtn.innerText = "Saving Data...";
-            claimBtn.disabled = true;
-        }
+        if (claimBtn) { claimBtn.innerText = "Saving Data..."; claimBtn.disabled = true; }
 
-        const { error } = await supabaseClient
+        await supabaseClient
             .from('slaves')
             .update({ total_points: totalCoins })
             .eq('telegram_id', telegramUserId);
 
-        if (error) throw error;
     } catch (err) {
-        console.error("Critical trace on saving transactional coin balances:", err.message);
+        console.error("Coin sync error:", err.message);
     } finally {
-        if (claimBtn) {
-            claimBtn.innerText = "Claim & Continue";
-            claimBtn.disabled = false;
-        }
-        initLobby();
+        if (claimBtn) { claimBtn.innerText = "Claim & Continue"; claimBtn.disabled = false; }
+        showScreen(lobbyScreen);
     }
 }
 
@@ -129,45 +147,80 @@ async function saveEnergyToDatabase() {
             .update({ energy: currentEnergy })
             .eq('telegram_id', telegramUserId);
     } catch (err) {
-        console.error("Error executing safe energy serialization update script:", err.message);
+        console.error("Energy sync error:", err.message);
     }
 }
 
 // ==========================================================================
-// 6. DASHBOARD DESIGN AND HEADER RENDER LOOKUPS
+// 6. UI UPDATES & NAVIGATION
 // ==========================================================================
 function updateHeaderStats() {
     if (scoreDisplay) scoreDisplay.innerText = Math.floor(totalCoins);
     if (multiplierDisplay) multiplierDisplay.innerText = `x${activeMultiplier.toFixed(2)}`;
 }
 
-function initLobby() {
-    updateHeaderStats();
-    if (lobbyScreen) lobbyScreen.classList.add('active');
-    if (gameScreen) gameScreen.classList.remove('active');
-    
-    if (bonusNotice) {
-        if (extraTime > 0) {
-            bonusNotice.innerText = `Duration: 45s (+${extraTime}s Shop Bonus Active)`;
-        } else {
-            bonusNotice.innerText = `Duration: 45s`;
-        }
+function updateEnergyUI() {
+    if (energyDisplay) {
+        energyDisplay.innerText = `${currentEnergy}/${maxEnergy}`;
     }
 }
 
+function showScreen(targetScreen) {
+    // Hide all screens
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    // Show target screen
+    if (targetScreen) targetScreen.classList.add('active');
+    
+    updateHeaderStats();
+    updateEnergyUI();
+}
+
+// Navigation Event Listeners
+if (navMarketBtn) navMarketBtn.addEventListener('click', () => showScreen(marketScreen));
+if (navProfileBtn) navProfileBtn.addEventListener('click', () => showScreen(profileScreen));
+if (backFromMarket) backFromMarket.addEventListener('click', () => showScreen(lobbyScreen));
+if (backFromProfile) backFromProfile.addEventListener('click', () => showScreen(lobbyScreen));
+
 // ==========================================================================
-// 7. CORE GAME LOOPS AND TRANSACTION TRIGGERS
+// 7. TIME-BASED ENERGY REGENERATION (4 HOURS LOGIC)
+// ==========================================================================
+function triggerEnergyWaitState() {
+    if (energyModal) energyModal.classList.remove('hidden');
+    
+    if (energyTimerInterval) clearInterval(energyTimerInterval);
+    
+    // Timer expiration logic
+    energyTimerInterval = setInterval(() => {
+        if (waitTimeRemaining <= 0) {
+            clearInterval(energyTimerInterval);
+            currentEnergy = maxEnergy;
+            updateEnergyUI();
+            saveEnergyToDatabase();
+            if (energyModal) energyModal.classList.add('hidden');
+            waitTimeRemaining = 14400; // Reset timer
+            return;
+        }
+        
+        waitTimeRemaining--;
+        const h = Math.floor(waitTimeRemaining / 3600).toString().padStart(2, '0');
+        const m = Math.floor((waitTimeRemaining % 3600) / 60).toString().padStart(2, '0');
+        const s = (waitTimeRemaining % 60).toString().padStart(2, '0');
+        
+        if (energyCountdown) energyCountdown.innerText = `${h}:${m}:${s}`;
+    }, 1000);
+}
+
+// ==========================================================================
+// 8. CORE GAME LOOPS AND TRANSACTION TRIGGERS
 // ==========================================================================
 function startGame() {
     if (currentEnergy <= 0) {
-        if (energyModal) energyModal.classList.remove('hidden');
+        triggerEnergyWaitState();
         return; 
     }
 
     currentEnergy--;
-    if (energyDisplay) {
-        energyDisplay.innerText = `${currentEnergy}/${maxEnergy}`;
-    }
+    updateEnergyUI();
     saveEnergyToDatabase();
 
     currentTask = laraTasks[Math.floor(Math.random() * laraTasks.length)];
@@ -181,8 +234,7 @@ function startGame() {
     if (taskName) taskName.innerText = currentTask.name;
     if (timerDisplay) timerDisplay.innerText = `${timeLeft}s`;
 
-    if (lobbyScreen) lobbyScreen.classList.remove('active');
-    if (gameScreen) gameScreen.classList.add('active');
+    showScreen(gameScreen);
     if (rewardModal) rewardModal.classList.add('hidden');
 
     updateProgressBar();
@@ -215,7 +267,7 @@ if (laraTargetContainer) {
         updateProgressBar();
         
         if (currentBar >= currentTask.maxBar) {
-            endGame(true);
+            endGame(true); // Golden Fingers (Last 1 Sec) badge logic to be added here
         }
     });
 }
@@ -230,12 +282,16 @@ function endGame(isSuccess) {
         if (rewardModal) rewardModal.classList.remove('hidden');
     } else {
         alert("Time is up! You failed to please Madame Lara.");
-        initLobby();
+        showScreen(lobbyScreen);
+        
+        if (currentEnergy <= 0) {
+            triggerEnergyWaitState();
+        }
     }
 }
 
 // ==========================================================================
-// 8. INTERACTIVE CLICK CAPTURING SUBSYSTEMS
+// 9. INTERACTIVE CLICK CAPTURING SUBSYSTEMS
 // ==========================================================================
 if (claimBtn) {
     claimBtn.addEventListener('click', () => {
@@ -245,11 +301,10 @@ if (claimBtn) {
         updateHeaderStats();
         
         if (rewardModal) rewardModal.classList.add('hidden');
-        
         saveCoinsToDatabase();
 
-        if (currentEnergy <= 0 && energyModal) {
-            energyModal.classList.remove('hidden'); 
+        if (currentEnergy <= 0) {
+            triggerEnergyWaitState();
         }
     });
 }
@@ -265,52 +320,24 @@ if (closeEnergyModalBtn) {
 }
 
 // ==========================================================================
-// 9. NATIVE ADSGRAM NETWORK INTEGRATION WIREFRAME
+// 10. TELEGRAM STARS (XTR) INVOICE TRIGGERS (WIRE-UP)
 // ==========================================================================
-if (watchAdBtn) {
-    watchAdBtn.addEventListener('click', () => {
-        if (!window.Adsgram) {
-            alert("Ad network is currently loading. Please try again in a few seconds.");
-            return;
-        }
+if (buyEnergy5Btn) {
+    buyEnergy5Btn.addEventListener('click', () => {
+        // Redirect user to the bot and auto-open invoice
+        tg.openTelegramLink("https://t.me/madamelara_bot?start=buy_energy_5");
+    });
+}
 
-        const originalText = watchAdBtn.innerText;
-        watchAdBtn.innerText = "Loading Ad...";
-        watchAdBtn.style.opacity = "0.7";
-        watchAdBtn.style.pointerEvents = "none";
-
-        // UPDATED: Connected to new Block ID: 37958
-        const AdController = window.Adsgram.init({ blockId: "37958" });
-
-        AdController.show()
-            .then(async (result) => {
-                currentEnergy = maxEnergy;
-                if (energyDisplay) {
-                    energyDisplay.innerText = `${currentEnergy}/${maxEnergy}`;
-                }
-                updateHeaderStats();
-                
-                await saveEnergyToDatabase();
-
-                watchAdBtn.innerText = originalText;
-                watchAdBtn.style.opacity = "1";
-                watchAdBtn.style.pointerEvents = "auto";
-
-                if (energyModal) energyModal.classList.add('hidden');
-                initLobby();
-            })
-            .catch((result) => {
-                watchAdBtn.innerText = originalText;
-                watchAdBtn.style.opacity = "1";
-                watchAdBtn.style.pointerEvents = "auto";
-                
-                alert("Ad reward could not be claimed. Please watch the video until the end.");
-            });
+if (buyEnergy10Btn) {
+    buyEnergy10Btn.addEventListener('click', () => {
+        // Redirect user to the bot and auto-open invoice
+        tg.openTelegramLink("https://t.me/madamelara_bot?start=buy_energy_10");
     });
 }
 
 // ==========================================================================
-// 10. SYSTEM APPLICATION INGEST BOOTSTRAP
+// 11. SYSTEM APPLICATION INGEST BOOTSTRAP
 // ==========================================================================
-initLobby();
+showScreen(lobbyScreen);
 loadUserData();

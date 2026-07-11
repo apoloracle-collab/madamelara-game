@@ -25,23 +25,20 @@ def get_or_create_slave(telegram_id: int, username: str) -> dict:
     creates a new record with default starting values to sync with app.js.
     """
     try:
-        # Attempt to fetch existing user
         response = supabase.table("slaves").select("*").eq("telegram_id", telegram_id).execute()
         
         if response.data:
             return response.data[0]
         
-        # User does not exist, prepare default initialization payload
         new_slave = {
             "telegram_id": telegram_id,
             "username": username if username else "Unknown_Slave",
             "total_points": 0,
             "active_multiplier": 1.0,
-            "energy": 5,        # Aligned with frontend app.js configs
-            "max_energy": 5     # Aligned with frontend app.js configs
+            "energy": 5,        
+            "max_energy": 5     
         }
         
-        # Insert new user into the database
         insert_response = supabase.table("slaves").insert(new_slave).execute()
         return insert_response.data[0]
         
@@ -49,9 +46,26 @@ def get_or_create_slave(telegram_id: int, username: str) -> dict:
         print(f"Database transaction error in get_or_create_slave: {e}")
         return {}
 
-def update_user_interaction(telegram_id: int):
+def add_energy(telegram_id: int, amount: int) -> bool:
     """
-    Placeholder function for tracking user engagement metrics.
-    Can be expanded later to track last login times, daily streaks, or activity logs.
+    Safely increments user energy upon a successful Telegram Stars purchase.
     """
-    pass
+    try:
+        # Fetch the current energy status from database
+        response = supabase.table("slaves").select("energy").eq("telegram_id", telegram_id).execute()
+        
+        if response.data:
+            current_energy = response.data[0].get("energy", 0)
+            
+            # Add purchased amount to the current stack
+            new_energy = current_energy + amount
+            
+            # Update database status
+            supabase.table("slaves").update({"energy": new_energy}).eq("telegram_id", telegram_id).execute()
+            print(f"Success: Added {amount} energy to {telegram_id}. New Energy Balance: {new_energy}")
+            return True
+            
+        return False
+    except Exception as e:
+        print(f"Database error in add_energy: {e}")
+        return False
