@@ -39,9 +39,7 @@ let currentTask = null;
 let currentBar = 0;
 let timerInterval = null;
 
-// Energy wait timer (4 Hours = 14400 Seconds)
 let energyTimerInterval = null;
-let waitTimeRemaining = 14400; 
 
 // ==========================================================================
 // 4. DOM RESOURCE MAPPINGS
@@ -182,29 +180,41 @@ if (backFromMarket) backFromMarket.addEventListener('click', () => showScreen(lo
 if (backFromProfile) backFromProfile.addEventListener('click', () => showScreen(lobbyScreen));
 
 // ==========================================================================
-// 7. TIME-BASED ENERGY REGENERATION (4 HOURS LOGIC)
+// 7. TIME-BASED ENERGY REGENERATION (4 HOURS LOGIC) - FIXED
 // ==========================================================================
 function triggerEnergyWaitState() {
     if (energyModal) energyModal.classList.remove('hidden');
     
     if (energyTimerInterval) clearInterval(energyTimerInterval);
     
-    // Timer expiration logic
+    // Retrieve target time from local storage, or set it to 4 hours from now
+    let targetTime = localStorage.getItem('energyTargetTime');
+    if (!targetTime) {
+        targetTime = Date.now() + (14400 * 1000); // Current time + 4 hours in milliseconds
+        localStorage.setItem('energyTargetTime', targetTime);
+    }
+
+    // Countdown loop
     energyTimerInterval = setInterval(() => {
-        if (waitTimeRemaining <= 0) {
+        const now = Date.now();
+        const remainingMs = targetTime - now;
+
+        // If time is up
+        if (remainingMs <= 0) {
             clearInterval(energyTimerInterval);
             currentEnergy = maxEnergy;
             updateEnergyUI();
             saveEnergyToDatabase();
+            localStorage.removeItem('energyTargetTime'); // Clear memory
             if (energyModal) energyModal.classList.add('hidden');
-            waitTimeRemaining = 14400; // Reset timer
             return;
         }
         
-        waitTimeRemaining--;
-        const h = Math.floor(waitTimeRemaining / 3600).toString().padStart(2, '0');
-        const m = Math.floor((waitTimeRemaining % 3600) / 60).toString().padStart(2, '0');
-        const s = (waitTimeRemaining % 60).toString().padStart(2, '0');
+        // Convert remaining milliseconds to H:M:S
+        const totalSeconds = Math.floor(remainingMs / 1000);
+        const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
         
         if (energyCountdown) energyCountdown.innerText = `${h}:${m}:${s}`;
     }, 1000);
