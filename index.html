@@ -65,28 +65,34 @@
 
         <!-- 3. SECRET PORTAL (MARKET & GALLERY) -->
         <div id="market-screen" class="screen">
-            <h2 class="screen-title">Secret Portal</h2>
-            <p class="screen-desc">Unlock Madame Lara's exclusive content with Telegram Stars (⭐️).</p>
+            <h2 class="screen-title" style="color: #d4af37;">Secret Portal</h2>
+            <p class="screen-desc">Unlock Madame Lara's exclusive content with Diamonds or Stars (⭐️).</p>
             
-            <div class="market-grid">
-                <div class="market-placeholder">Loading exclusive items...</div>
+            <!-- Yıldızlar & Üreticiler Vitrini -->
+            <div id="creators-section" style="margin-bottom: 20px;">
+                <div id="creators-grid" class="creators-grid">
+                    <!-- JS tarafından doldurulacak -->
+                </div>
+            </div>
+
+            <!-- Kilitli Galeriler Alanı -->
+            <div id="gallery-container" class="gallery-container">
+                <!-- Seçilen üreticinin görselleri JS tarafından buraya yüklenecek -->
             </div>
             
-            <button id="back-from-market" class="action-btn back-btn">⬅ Back to Chamber</button>
+            <button id="back-from-market" class="action-btn back-btn" style="margin-top: 20px;">⬅ Back to Chamber</button>
         </div>
 
         <!-- 4. PROFILE & BADGES SCREEN -->
         <div id="profile-screen" class="screen">
-    <h2 class="screen-title">My Profile</h2>
-    <p class="screen-desc">Your achievements and loyalty badges.</p>
+            <h2 class="screen-title">My Profile</h2>
+            <p class="screen-desc">Your achievements and loyalty badges.</p>
 
-    <!-- JS buranın içini otomatik dolduracak, o yüzden burası BOŞ kalmalı -->
-    <div id="badges-grid" class="badges-grid">
-        
-    </div>
+            <!-- JS buranın içini otomatik dolduracak -->
+            <div id="badges-grid" class="badges-grid"></div>
 
-    <button id="back-from-profile" class="btn">Back to Chamber</button>
-</div>
+            <button id="back-from-profile" class="btn" style="margin-top: 20px;">Back to Chamber</button>
+        </div>
 
         <!-- REWARD MODAL -->
         <div id="reward-modal" class="modal hidden">

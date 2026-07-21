@@ -508,7 +508,7 @@ function renderBadges() {
             <div class="badge-title">${b.name}</div>
         `;
         
-        div.onclick = () => alert(`🎖️ ${b.name}\n\nDurum: ${isUnlocked ? 'AÇILDI ✅' : 'KİLİTLİ 🔒'}\nGereksinim: ${b.req}`);
+        div.onclick = () => alert(`🎖️ ${b.name}\n\nStatus: ${isUnlocked ? 'UNLOCKED ✅' : 'LOCKED 🔒'}\nRequirement: ${b.req}`);
         
         grid.appendChild(div);
     });
