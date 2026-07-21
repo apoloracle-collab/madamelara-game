@@ -351,3 +351,44 @@ if (buyEnergy10Btn) {
 // ==========================================================================
 showScreen(lobbyScreen);
 loadUserData();
+
+// ==========================================================================
+// 12. BADGE SYSTEM
+// ==========================================================================
+const badgesConfig = [
+    { id: 'chain', name: 'Chain of Obedience', req: 'Initial entry' },
+    { id: 'whisper', name: 'Whispering Slave', req: 'Tap 25,000 times' },
+    { id: 'diamond', name: 'Diamond Devotee', req: 'Collect 5,000 Diamonds' },
+    { id: 'flame', name: 'Eternal Flame', req: 'Complete 50 perfect tasks' },
+    { id: 'throne', name: 'Throne Seeker', req: 'Purchase 3 items from Market' },
+    { id: 'tome', name: 'Mystic Tome', req: 'Complete 100 tasks' },
+    { id: 'key', name: 'Key of Secrets', req: 'Make your first purchase with Stars' },
+    { id: 'moon', name: 'Midnight Watcher', req: 'Visit mostly between 22:00-05:00' },
+    { id: 'cat', name: 'Shadow Familiar', req: 'Achieve 50 "Perfect" scores' },
+    { id: 'crown', name: 'Royal Decree', req: 'Collect all other badges' }
+];
+
+function renderBadges(userProgress) {
+    const grid = document.getElementById('badges-grid');
+    if (!grid) return;
+    grid.innerHTML = ''; 
+
+    badgesConfig.forEach(b => {
+        // Check if the badge is unlocked based on database status
+        const isUnlocked = userProgress[b.id] || false; 
+        
+        // Determine the active or locked image name
+        const imgName = isUnlocked ? `badge_${b.id}_active` : `badge_${b.id}_locked`;
+        
+        const div = document.createElement('div');
+        div.className = `badge-item ${isUnlocked ? 'unlocked' : 'locked'}`;
+        
+        // Adding the image assuming it has a .png extension in the assets folder
+        div.innerHTML = `<img src="assets/${imgName}.png" style="width:100%">`;
+        
+        // Show only the requirement when the badge is tapped
+        div.onclick = () => alert(`${b.name}\n\nRequirement: ${b.req}`);
+        
+        grid.appendChild(div);
+    });
+}

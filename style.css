@@ -403,3 +403,35 @@ body {
     border: 1px solid #333 !important;
     margin-top: 20px;
 }
+
+/* ==========================================================================
+   8. BADGES DESIGN
+   ========================================================================== */
+.badges-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 badges per row */
+    gap: 25px; /* Spacing between badges */
+    padding: 30px;
+    justify-items: center;
+}
+
+.badge-item {
+    width: 80px; /* Ideal size for a 3-column mobile layout */
+    height: 80px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.badge-item:hover {
+    transform: scale(1.1); /* Slight zoom effect on tap/hover */
+}
+
+/* Locked badges appear faded and grayscale */
+.badge-item.locked {
+    filter: grayscale(100%) opacity(30%);
+}
+
+/* Unlocked badges appear fully colored and clear */
+.badge-item.unlocked {
+    filter: grayscale(0%) opacity(100%);
+}
