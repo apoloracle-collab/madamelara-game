@@ -40,6 +40,7 @@ let currentBar = 0;
 let timerInterval = null;
 
 let energyTimerInterval = null;
+let unlockedBadgesList = []; // Rozet takibi için
 
 // ==========================================================================
 // 4. DOM RESOURCE MAPPINGS
@@ -89,25 +90,38 @@ async function loadUserData() {
     try {
         const { data, error } = await supabaseClient
             .from('slaves')
-            .select('total_points, active_multiplier, energy, max_energy')
+            .select('total_points, active_multiplier, energy, max_energy, unlocked_badges')
             .eq('telegram_id', telegramUserId)
             .single();
 
-        if (error) throw error;
+        if (error && error.code !== 'PGRST116') throw error;
 
         if (data) {
             totalCoins = data.total_points || 0;
             activeMultiplier = data.active_multiplier || 1.0;
             currentEnergy = data.energy !== null ? data.energy : 5;
             maxEnergy = data.max_energy || 5;
+            unlockedBadgesList = data.unlocked_badges || [];
             
             updateEnergyUI();
+            renderBadges();
             
-            // Update title if VIP status exists
             if(maxEnergy > 5) {
                 if(slaveStatusText) slaveStatusText.innerHTML = "👑 VIP FOLLOWER";
                 if(slaveStatusText) slaveStatusText.style.color = "#d4af37";
             }
+        } else {
+            // Yeni kullanıcı kaydı
+            await supabaseClient.from('slaves').insert({
+                telegram_id: telegramUserId,
+                username: telegramUsername,
+                total_points: 0,
+                energy: 5,
+                max_energy: 5,
+                unlocked_badges: ['chain'] // İlk giriş rozeti
+            });
+            unlockedBadgesList = ['chain'];
+            renderBadges();
         }
     } catch (err) {
         console.error("Database fetch error:", err.message);
@@ -126,7 +140,7 @@ async function saveCoinsToDatabase() {
 
         await supabaseClient
             .from('slaves')
-            .update({ total_points: totalCoins })
+            .update({ total_points: totalCoins, unlocked_badges: unlockedBadgesList })
             .eq('telegram_id', telegramUserId);
 
     } catch (err) {
@@ -150,7 +164,117 @@ async function saveEnergyToDatabase() {
 }
 
 // ==========================================================================
-// 6. UI UPDATES & NAVIGATION
+// 6. CREATORS & LOCKED GALLERY LOGIC (YILDIZLAR VE İÇERİK PAZARI)
+// ==========================================================================
+async function loadCreators() {
+    const creatorsGrid = document.getElementById('creators-grid');
+    if (!creatorsGrid) return;
+
+    try {
+        const { data: creators, error } = await supabaseClient.from('creators').select('*');
+        if (error) throw error;
+
+        creatorsGrid.innerHTML = '';
+        if (!creators || creators.length === 0) {
+            creatorsGrid.innerHTML = '<p style="color:#aaa; text-align:center;">Henüz içerik üreticisi eklenmedi.</p>';
+            return;
+        }
+
+        creators.forEach(creator => {
+            const card = document.createElement('div');
+            card.className = 'creator-card';
+            card.innerHTML = `
+                <img src="${creator.avatar_url || 'assets/default_avatar.png'}" alt="${creator.name}" class="creator-avatar">
+                <h3>${creator.name}</h3>
+                <p>${creator.bio || 'İçerik Üreticisi'}</p>
+            `;
+            card.onclick = () => loadCreatorGallery(creator.id, creator.name);
+            creatorsGrid.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Creators fetch error:", err.message);
+    }
+}
+
+async function loadCreatorGallery(creatorId, creatorName) {
+    const galleryContainer = document.getElementById('gallery-container');
+    if (!galleryContainer) return;
+
+    try {
+        const { data: contents, error } = await supabaseClient
+            .from('contents')
+            .select('*')
+            .eq('creator_id', creatorId);
+
+        if (error) throw error;
+
+        // Kullanıcının açtığı kilitleri çek
+        const { data: purchases } = await supabaseClient
+            .from('purchases')
+            .select('content_id')
+            .eq('user_id', telegramUserId);
+
+        const purchasedIds = purchases ? purchases.map(p => p.content_id) : [];
+
+        galleryContainer.innerHTML = `<h2 style="color:#d4af37;">${creatorName} Galerisi</h2><div class="gallery-grid"></div>`;
+        const grid = galleryContainer.querySelector('.gallery-grid');
+
+        contents.forEach(item => {
+            const isUnlocked = purchasedIds.includes(item.id);
+            const card = document.createElement('div');
+            card.className = `gallery-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+
+            const displayUrl = isUnlocked ? item.full_url : item.preview_url;
+
+            card.innerHTML = `
+                <div class="image-wrapper">
+                    <img src="${displayUrl}" style="${isUnlocked ? '' : 'filter: blur(8px);'}" />
+                    ${!isUnlocked ? `<div class="lock-overlay">🔒 ${item.cost} ${item.unlock_type === 'STARS' ? '⭐️' : '💎'}</div>` : ''}
+                </div>
+                <h4>${item.title}</h4>
+            `;
+
+            if (!isUnlocked) {
+                card.onclick = () => unlockContent(item.id, item.cost, item.unlock_type);
+            } else {
+                card.onclick = () => alert("Görsel zaten açık!");
+            }
+
+            grid.appendChild(card);
+        });
+    } catch (err) {
+        console.error("Gallery fetch error:", err.message);
+    }
+}
+
+async function unlockContent(contentId, cost, unlockType) {
+    if (unlockType === 'POINTS') {
+        if (totalCoins < cost) {
+            alert("Yetersiz Elmas Bakiyesi! Görev yaparak elmas kazanın.");
+            return;
+        }
+
+        if (confirm(`${cost} Elmas karşılığında bu görselin kilidini açmak istiyor musunuz?`)) {
+            totalCoins -= cost;
+            updateHeaderStats();
+
+            await supabaseClient.from('purchases').insert({
+                user_id: telegramUserId,
+                content_id: contentId,
+                payment_type: 'POINTS'
+            });
+
+            await saveCoinsToDatabase();
+            alert("Kilit Başarıyla Açıldı!");
+            loadCreators(); // Galeriyi yenile
+        }
+    } else if (unlockType === 'STARS') {
+        tg.openTelegramLink(`https://t.me/madamelara_bot?start=buy_content_${contentId}`);
+    }
+}
+
+// ==========================================================================
+// 7. UI UPDATES & NAVIGATION
 // ==========================================================================
 function updateHeaderStats() {
     if (scoreDisplay) scoreDisplay.innerText = Math.floor(totalCoins);
@@ -164,13 +288,15 @@ function updateEnergyUI() {
 }
 
 function showScreen(targetScreen) {
-    // Hide all screens
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    // Show target screen
     if (targetScreen) targetScreen.classList.add('active');
     
     updateHeaderStats();
     updateEnergyUI();
+
+    if (targetScreen === marketScreen) {
+        loadCreators();
+    }
 }
 
 // Navigation Event Listeners
@@ -180,37 +306,32 @@ if (backFromMarket) backFromMarket.addEventListener('click', () => showScreen(lo
 if (backFromProfile) backFromProfile.addEventListener('click', () => showScreen(lobbyScreen));
 
 // ==========================================================================
-// 7. TIME-BASED ENERGY REGENERATION (4 HOURS LOGIC) - FIXED
+// 8. TIME-BASED ENERGY REGENERATION (4 HOURS LOGIC)
 // ==========================================================================
 function triggerEnergyWaitState() {
     if (energyModal) energyModal.classList.remove('hidden');
-    
     if (energyTimerInterval) clearInterval(energyTimerInterval);
     
-    // Retrieve target time from local storage, or set it to 4 hours from now
     let targetTime = localStorage.getItem('energyTargetTime');
     if (!targetTime) {
-        targetTime = Date.now() + (14400 * 1000); // Current time + 4 hours in milliseconds
+        targetTime = Date.now() + (14400 * 1000);
         localStorage.setItem('energyTargetTime', targetTime);
     }
 
-    // Countdown loop
     energyTimerInterval = setInterval(() => {
         const now = Date.now();
         const remainingMs = targetTime - now;
 
-        // If time is up
         if (remainingMs <= 0) {
             clearInterval(energyTimerInterval);
             currentEnergy = maxEnergy;
             updateEnergyUI();
             saveEnergyToDatabase();
-            localStorage.removeItem('energyTargetTime'); // Clear memory
+            localStorage.removeItem('energyTargetTime');
             if (energyModal) energyModal.classList.add('hidden');
             return;
         }
         
-        // Convert remaining milliseconds to H:M:S
         const totalSeconds = Math.floor(remainingMs / 1000);
         const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
         const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
@@ -221,7 +342,7 @@ function triggerEnergyWaitState() {
 }
 
 // ==========================================================================
-// 8. CORE GAME LOOPS AND TRANSACTION TRIGGERS
+// 9. CORE GAME LOOPS AND TRANSACTION TRIGGERS
 // ==========================================================================
 function startGame() {
     if (currentEnergy <= 0) {
@@ -277,7 +398,7 @@ if (laraTargetContainer) {
         updateProgressBar();
         
         if (currentBar >= currentTask.maxBar) {
-            endGame(true); // Golden Fingers (Last 1 Sec) badge logic to be added here
+            endGame(true);
         }
     });
 }
@@ -287,6 +408,13 @@ function endGame(isSuccess) {
     clearInterval(timerInterval);
     
     if (isSuccess) {
+        // Gece Kuşu Rozet Kontrolü (22:00 - 05:00)
+        const currentHour = new Date().getHours();
+        if ((currentHour >= 22 || currentHour <= 5) && !unlockedBadgesList.includes('moon')) {
+            unlockedBadgesList.push('moon');
+            alert("🌙 Rozet Kazandın: Midnight Watcher!");
+        }
+
         if (rewardDesc) rewardDesc.innerText = `You have successfully completed "${currentTask.name}" and pleased Madame Lara.`;
         if (rewardPoints) rewardPoints.innerText = `+${currentTask.reward} Diamonds`;
         if (rewardModal) rewardModal.classList.remove('hidden');
@@ -301,7 +429,7 @@ function endGame(isSuccess) {
 }
 
 // ==========================================================================
-// 9. INTERACTIVE CLICK CAPTURING SUBSYSTEMS
+// 10. INTERACTIVE CLICK CAPTURING SUBSYSTEMS
 // ==========================================================================
 if (claimBtn) {
     claimBtn.addEventListener('click', () => {
@@ -330,27 +458,19 @@ if (closeEnergyModalBtn) {
 }
 
 // ==========================================================================
-// 10. TELEGRAM STARS (XTR) INVOICE TRIGGERS (WIRE-UP)
+// 11. TELEGRAM STARS (XTR) INVOICE TRIGGERS
 // ==========================================================================
 if (buyEnergy5Btn) {
     buyEnergy5Btn.addEventListener('click', () => {
-        // Redirect user to the bot and auto-open invoice
         tg.openTelegramLink("https://t.me/madamelara_bot?start=buy_energy_5");
     });
 }
 
 if (buyEnergy10Btn) {
     buyEnergy10Btn.addEventListener('click', () => {
-        // Redirect user to the bot and auto-open invoice
         tg.openTelegramLink("https://t.me/madamelara_bot?start=buy_energy_10");
     });
 }
-
-// ==========================================================================
-// 11. SYSTEM APPLICATION INGEST BOOTSTRAP
-// ==========================================================================
-showScreen(lobbyScreen);
-loadUserData();
 
 // ==========================================================================
 // 12. BADGE SYSTEM
@@ -368,27 +488,26 @@ const badgesConfig = [
     { id: 'crown', name: 'Royal Decree', req: 'Collect all other badges' }
 ];
 
-function renderBadges(userProgress) {
+function renderBadges() {
     const grid = document.getElementById('badges-grid');
     if (!grid) return;
     grid.innerHTML = ''; 
 
     badgesConfig.forEach(b => {
-        // Check if the badge is unlocked based on database status
-        const isUnlocked = userProgress[b.id] || false; 
-        
-        // Determine the active or locked image name
+        const isUnlocked = unlockedBadgesList.includes(b.id);
         const imgName = isUnlocked ? `badge_${b.id}_active` : `badge_${b.id}_locked`;
         
         const div = document.createElement('div');
         div.className = `badge-item ${isUnlocked ? 'unlocked' : 'locked'}`;
-        
-        // Adding the image assuming it has a .png extension in the assets folder
         div.innerHTML = `<img src="assets/${imgName}.png" style="width:100%">`;
-        
-        // Show only the requirement when the badge is tapped
         div.onclick = () => alert(`${b.name}\n\nRequirement: ${b.req}`);
         
         grid.appendChild(div);
     });
 }
+
+// ==========================================================================
+// 13. SYSTEM BOOTSTRAP
+// ==========================================================================
+showScreen(lobbyScreen);
+loadUserData();
