@@ -40,7 +40,7 @@ let currentBar = 0;
 let timerInterval = null;
 
 let energyTimerInterval = null;
-let unlockedBadgesList = []; // Rozet takibi için
+let unlockedBadgesList = [];
 
 // ==========================================================================
 // 4. DOM RESOURCE MAPPINGS
@@ -83,6 +83,9 @@ const closeEnergyModalBtn = document.getElementById('close-energy-modal');
 const buyEnergy5Btn = document.getElementById('buy-energy-5');
 const buyEnergy10Btn = document.getElementById('buy-energy-10');
 
+// Image Modal Buttons
+const closeImageModalBtn = document.getElementById('close-image-modal');
+
 // ==========================================================================
 // 5. SUPABASE CLOUD FILE & INVENTORY SYNC
 // ==========================================================================
@@ -111,14 +114,13 @@ async function loadUserData() {
                 if(slaveStatusText) slaveStatusText.style.color = "#d4af37";
             }
         } else {
-            // Yeni kullanıcı kaydı
             await supabaseClient.from('slaves').insert({
                 telegram_id: telegramUserId,
                 username: telegramUsername,
                 total_points: 0,
                 energy: 5,
                 max_energy: 5,
-                unlocked_badges: ['chain'] // İlk giriş rozeti
+                unlocked_badges: ['chain']
             });
             unlockedBadgesList = ['chain'];
             renderBadges();
@@ -164,8 +166,10 @@ async function saveEnergyToDatabase() {
 }
 
 // ==========================================================================
-// 6. CREATORS & LOCKED GALLERY LOGIC (YILDIZLAR VE İÇERİK PAZARI)
+// 6. CREATORS & LOCKED GALLERY LOGIC
 // ==========================================================================
+let currentSelectedCreator = { id: null, name: '' };
+
 async function loadCreators() {
     const creatorsGrid = document.getElementById('creators-grid');
     if (!creatorsGrid) return;
@@ -176,20 +180,24 @@ async function loadCreators() {
 
         creatorsGrid.innerHTML = '';
         if (!creators || creators.length === 0) {
-            creatorsGrid.innerHTML = '<p style="color:#aaa; text-align:center;">Henüz içerik üreticisi eklenmedi.</p>';
+            creatorsGrid.innerHTML = '<p style="color:#aaa; text-align:center;">No creators available yet.</p>';
             return;
         }
 
-        creators.forEach(creator => {
+        creators.forEach((creator, index) => {
             const card = document.createElement('div');
             card.className = 'creator-card';
             card.innerHTML = `
                 <img src="${creator.avatar_url || 'assets/default_avatar.png'}" alt="${creator.name}" class="creator-avatar">
                 <h3>${creator.name}</h3>
-                <p>${creator.bio || 'İçerik Üreticisi'}</p>
+                <p>${creator.bio || 'Content Creator'}</p>
             `;
             card.onclick = () => loadCreatorGallery(creator.id, creator.name);
             creatorsGrid.appendChild(card);
+
+            if (index === 0 && !currentSelectedCreator.id) {
+                loadCreatorGallery(creator.id, creator.name);
+            }
         });
     } catch (err) {
         console.error("Creators fetch error:", err.message);
@@ -197,6 +205,7 @@ async function loadCreators() {
 }
 
 async function loadCreatorGallery(creatorId, creatorName) {
+    currentSelectedCreator = { id: creatorId, name: creatorName };
     const galleryContainer = document.getElementById('gallery-container');
     if (!galleryContainer) return;
 
@@ -208,7 +217,6 @@ async function loadCreatorGallery(creatorId, creatorName) {
 
         if (error) throw error;
 
-        // Kullanıcının açtığı kilitleri çek
         const { data: purchases } = await supabaseClient
             .from('purchases')
             .select('content_id')
@@ -216,7 +224,7 @@ async function loadCreatorGallery(creatorId, creatorName) {
 
         const purchasedIds = purchases ? purchases.map(p => p.content_id) : [];
 
-        galleryContainer.innerHTML = `<h2 style="color:#d4af37;">${creatorName} Galerisi</h2><div class="gallery-grid"></div>`;
+        galleryContainer.innerHTML = `<h3 style="color:#d4af37; margin-bottom: 12px; font-size: 16px;">${creatorName}'s Gallery</h3><div class="gallery-grid"></div>`;
         const grid = galleryContainer.querySelector('.gallery-grid');
 
         contents.forEach(item => {
@@ -227,7 +235,7 @@ async function loadCreatorGallery(creatorId, creatorName) {
             const displayUrl = isUnlocked ? item.full_url : item.preview_url;
 
             card.innerHTML = `
-                <div class="image-wrapper">
+                <div class="image-wrapper" style="cursor: pointer;">
                     <img src="${displayUrl}" style="${isUnlocked ? '' : 'filter: blur(8px);'}" />
                     ${!isUnlocked ? `<div class="lock-overlay">🔒 ${item.cost} ${item.unlock_type === 'STARS' ? '⭐️' : '💎'}</div>` : ''}
                 </div>
@@ -237,7 +245,7 @@ async function loadCreatorGallery(creatorId, creatorName) {
             if (!isUnlocked) {
                 card.onclick = () => unlockContent(item.id, item.cost, item.unlock_type);
             } else {
-                card.onclick = () => alert("Görsel zaten açık!");
+                card.onclick = () => openImageModal(item.full_url, item.title);
             }
 
             grid.appendChild(card);
@@ -250,11 +258,11 @@ async function loadCreatorGallery(creatorId, creatorName) {
 async function unlockContent(contentId, cost, unlockType) {
     if (unlockType === 'POINTS') {
         if (totalCoins < cost) {
-            alert("Yetersiz Elmas Bakiyesi! Görev yaparak elmas kazanın.");
+            alert(`Insufficient Diamonds! You need ${cost} Diamonds to unlock this content.`);
             return;
         }
 
-        if (confirm(`${cost} Elmas karşılığında bu görselin kilidini açmak istiyor musunuz?`)) {
+        if (confirm(`Do you want to unlock this exclusive content for ${cost} Diamonds?`)) {
             totalCoins -= cost;
             updateHeaderStats();
 
@@ -265,12 +273,34 @@ async function unlockContent(contentId, cost, unlockType) {
             });
 
             await saveCoinsToDatabase();
-            alert("Kilit Başarıyla Açıldı!");
-            loadCreators(); // Galeriyi yenile
+            alert("Unlocked Successfully!");
+            
+            if (currentSelectedCreator.id) {
+                loadCreatorGallery(currentSelectedCreator.id, currentSelectedCreator.name);
+            }
         }
     } else if (unlockType === 'STARS') {
         tg.openTelegramLink(`https://t.me/madamelara_bot?start=buy_content_${contentId}`);
     }
+}
+
+function openImageModal(url, title) {
+    const modal = document.getElementById('image-modal');
+    const img = document.getElementById('modal-full-image');
+    const titleEl = document.getElementById('modal-image-title');
+
+    if (modal && img) {
+        img.src = url;
+        if (titleEl) titleEl.innerText = title;
+        modal.classList.remove('hidden');
+    }
+}
+
+if (closeImageModalBtn) {
+    closeImageModalBtn.addEventListener('click', () => {
+        const modal = document.getElementById('image-modal');
+        if (modal) modal.classList.add('hidden');
+    });
 }
 
 // ==========================================================================
@@ -408,11 +438,10 @@ function endGame(isSuccess) {
     clearInterval(timerInterval);
     
     if (isSuccess) {
-        // Gece Kuşu Rozet Kontrolü (22:00 - 05:00)
         const currentHour = new Date().getHours();
         if ((currentHour >= 22 || currentHour <= 5) && !unlockedBadgesList.includes('moon')) {
             unlockedBadgesList.push('moon');
-            alert("🌙 Rozet Kazandın: Midnight Watcher!");
+            alert("🌙 Badge Unlocked: Midnight Watcher!");
         }
 
         if (rewardDesc) rewardDesc.innerText = `You have successfully completed "${currentTask.name}" and pleased Madame Lara.`;
@@ -473,7 +502,7 @@ if (buyEnergy10Btn) {
 }
 
 // ==========================================================================
-// 12. BADGE SYSTEM (ORIJINAL RESIM DESTEKLI)
+// 12. BADGE SYSTEM
 // ==========================================================================
 const badgesConfig = [
     { id: 'chain', name: 'Chain of Obedience', req: 'Initial entry' },
