@@ -473,7 +473,7 @@ if (buyEnergy10Btn) {
 }
 
 // ==========================================================================
-// 12. BADGE SYSTEM
+// 12. BADGE SYSTEM (ORIJINAL RESIM DESTEKLI)
 // ==========================================================================
 const badgesConfig = [
     { id: 'chain', name: 'Chain of Obedience', req: 'Initial entry' },
@@ -495,12 +495,20 @@ function renderBadges() {
 
     badgesConfig.forEach(b => {
         const isUnlocked = unlockedBadgesList.includes(b.id);
-        const imgName = isUnlocked ? `badge_${b.id}_active` : `badge_${b.id}_locked`;
+        const state = isUnlocked ? 'active' : 'locked';
+        const imgPath = `assets/badge_${b.id}_${state}.png`;
         
         const div = document.createElement('div');
         div.className = `badge-item ${isUnlocked ? 'unlocked' : 'locked'}`;
-        div.innerHTML = `<img src="assets/${imgName}.png" style="width:100%">`;
-        div.onclick = () => alert(`${b.name}\n\nRequirement: ${b.req}`);
+        
+        div.innerHTML = `
+            <div class="badge-img-box">
+                <img src="${imgPath}" alt="${b.name}" class="badge-img">
+            </div>
+            <div class="badge-title">${b.name}</div>
+        `;
+        
+        div.onclick = () => alert(`🎖️ ${b.name}\n\nDurum: ${isUnlocked ? 'AÇILDI ✅' : 'KİLİTLİ 🔒'}\nGereksinim: ${b.req}`);
         
         grid.appendChild(div);
     });
