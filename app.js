@@ -516,6 +516,7 @@ if (buyEnergy5Btn) {
         const deepLink = "https://t.me/madamelara_bot?start=buy_energy_5";
         if (tg && tg.openTelegramLink) {
             tg.openTelegramLink(deepLink);
+            if (tg.close) setTimeout(() => tg.close(), 100);
         } else {
             window.open(deepLink, "_blank");
         }
@@ -527,6 +528,7 @@ if (buyEnergy10Btn) {
         const deepLink = "https://t.me/madamelara_bot?start=buy_energy_10";
         if (tg && tg.openTelegramLink) {
             tg.openTelegramLink(deepLink);
+            if (tg.close) setTimeout(() => tg.close(), 100);
         } else {
             window.open(deepLink, "_blank");
         }
