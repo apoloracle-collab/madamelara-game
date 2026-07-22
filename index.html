@@ -247,19 +247,19 @@
                     <p class="text-xs text-gray-400 mt-0.5">Instant diamond packs via Telegram Stars (1 ⭐️ = 250 💎).</p>
 
                     <div class="grid grid-cols-3 gap-2.5 mt-3">
-                        <div onclick="buyGemsPack(3750, 15)" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
+                        <div onclick="buyGemsPack('pack_3750')" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
                             <div class="text-2xl">💰</div>
                             <div class="font-bold text-xs text-white mt-1">3,750 💎</div>
                             <div class="text-[10px] text-yellow-400 font-bold mt-1">15 ⭐️</div>
                         </div>
 
-                        <div onclick="buyGemsPack(15000, 60)" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
+                        <div onclick="buyGemsPack('pack_15000')" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
                             <div class="text-2xl">💎</div>
                             <div class="font-bold text-xs text-white mt-1">15,000 💎</div>
                             <div class="text-[10px] text-yellow-400 font-bold mt-1">60 ⭐️</div>
                         </div>
 
-                        <div onclick="buyGemsPack(62500, 250)" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
+                        <div onclick="buyGemsPack('pack_62500')" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
                             <div class="text-2xl">👑</div>
                             <div class="font-bold text-xs text-white mt-1">62,500 💎</div>
                             <div class="text-[10px] text-yellow-400 font-bold mt-1">250 ⭐️</div>
@@ -400,26 +400,6 @@
             <h3 id="modal-full-title" class="text-yellow-400 font-bold text-center mt-3 text-sm"></h3>
         </div>
 
-        <div id="stars-payment-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-            <div class="bg-[#181818] border border-amber-500/50 rounded-2xl p-5 max-w-sm w-full text-center space-y-4 shadow-2xl">
-                <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 text-3xl flex items-center justify-center mx-auto border border-amber-500/40">
-                    ⭐️
-                </div>
-                <h3 class="text-base font-bold text-white" id="stars-modal-title">Telegram Stars Payment</h3>
-                <p class="text-xs text-gray-300 leading-relaxed" id="stars-modal-desc">
-                    Clicking below will instantly open the bot chat to generate your secure Star invoice.
-                </p>
-                <div class="flex flex-col space-y-2 pt-2">
-                    <button id="stars-modal-confirm-btn" onclick="confirmStarsRedirect()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold text-xs py-3 rounded-xl shadow hover:opacity-90 transition flex items-center justify-center space-x-2">
-                        <span>⚡ Pay with Stars</span>
-                    </button>
-                    <button onclick="closeStarsModal()" class="w-full bg-[#252525] text-gray-400 text-xs py-2.5 rounded-xl hover:text-white transition">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <div id="toast-msg" class="hidden fixed top-16 inset-x-8 bg-amber-500 text-black font-bold text-xs text-center py-2.5 px-4 rounded-xl shadow-xl z-50 transition-all duration-300">
             System Message
         </div>
@@ -507,8 +487,6 @@
             { id: 'badge_cat', name: 'Shadow Familiar', req: '50 Perfect Taps', activeImg: 'assets/badge_cat_active.png', lockedImg: 'assets/badge_cat_locked.png' },
             { id: 'badge_crown', name: 'Royal Decree', req: 'Unlock All Badges', activeImg: 'assets/badge_crown_active.png', lockedImg: 'assets/badge_crown_locked.png' }
         ];
-
-        let pendingStarsCommand = "";
 
         function switchTab(tabId) {
             document.querySelectorAll('.screen-panel').forEach(panel => panel.classList.add('hidden'));
@@ -706,7 +684,7 @@
                     showToast("Not enough Diamonds! Needed: 100,000 💎");
                 }
             } else if (method === 'STARS') {
-                openStarsPaymentDialog("buy_autobot", "Buy Auto-Obey Bot (100 ⭐️)");
+                buyGemsPack('autobot_pass');
             }
         }
 
@@ -841,34 +819,24 @@
             }
         }
 
-        function openStarsPaymentDialog(commandCode, title) {
-            pendingStarsCommand = commandCode;
-            const modal = document.getElementById('stars-payment-modal');
-            const titleEl = document.getElementById('stars-modal-title');
-            if (titleEl) titleEl.innerText = title || "Telegram Stars Payment";
-            if (modal) modal.classList.remove('hidden');
-        }
-
-        function confirmStarsRedirect() {
-            closeStarsModal();
-            if (pendingStarsCommand) {
-                const botUsername = "madamelara_bot";
-                const deepLinkUrl = `https://t.me/${botUsername}?start=${pendingStarsCommand}`;
+        // Doğrudan Telegram openInvoice tetikleyicisi (Oyundan çıkmadan pencere açar)
+        function buyGemsPack(payloadType) {
+            if (tg && tg.openInvoice) {
+                fetch(`https://t.me/madamelara_bot?start=${payloadType}`) // fallback
+                // Doğrudan bot üzerinden fatura linkini çekip açıyoruz:
+                fetch(`https://${window.location.hostname}/api/invoice?payload=${payloadType}`)
+                    .catch(() => {})
                 
-                if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(deepLinkUrl);
-                } else {
-                    window.open(deepLinkUrl, '_blank');
-                }
+                // Telegram WebApp Native Ödeme Penceresi Tetikleyicisi
+                tg.openInvoice(`https://t.me/madamelara_bot?start=${payloadType}`, function(status) {
+                    if (status === 'paid') {
+                        showToast("🎉 Payment Successful!");
+                    }
+                });
+            } else {
+                // Tarayıcıda test ediyorsan veya tg yoksa doğrudan bot linkine yönlendirir
+                window.open(`https://t.me/madamelara_bot?start=${payloadType}`, '_blank');
             }
-        }
-
-        function closeStarsModal() {
-            document.getElementById('stars-payment-modal')?.classList.add('hidden');
-        }
-
-        function buyGemsPack(amount, starsCost) {
-            openStarsPaymentDialog(`buy_pack_${amount}`, `Buy ${amount.toLocaleString('tr-TR')} 💎 (${starsCost} ⭐️)`);
         }
 
         function renderPortalCards() {
@@ -940,7 +908,7 @@
                     showToast(`Not enough Diamonds! Needed: ${card.cost.toLocaleString('tr-TR')} 💎`);
                 }
             } else if (paymentMethod === 'STARS') {
-                openStarsPaymentDialog(`unlock_content_${cardId}`, `Unlock: ${card.title} (${card.starsCost} ⭐️)`);
+                buyGemsPack(`unlock_content_${cardId}`);
             }
         }
 
