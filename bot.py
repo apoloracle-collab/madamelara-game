@@ -19,7 +19,6 @@ if not TOKEN:
 
 bot = telebot.TeleBot(TOKEN)
 
-# Production Vercel App URL
 VERCEL_WEB_APP_URL = "https://madamelara-game.vercel.app"
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -35,13 +34,11 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format, *args):
-        # Silence routine health check logs from Render/UptimeRobot
         return
 
 def run_health_server():
     port = int(os.getenv("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
-    print(f"Health check server running on port {port}...")
     server.serve_forever()
 
 server_thread = threading.Thread(target=run_health_server, daemon=True)
@@ -63,7 +60,7 @@ def send_welcome(message):
                 title="Starter Bag (3,750 Diamonds)",
                 description="Instantly credit 3,750 Diamonds to your Madame Lara vault.",
                 invoice_payload="pack_3750",
-                provider_token="", # Must be EMPTY for Telegram Stars (XTR)
+                provider_token="",
                 currency="XTR",
                 prices=[types.LabeledPrice(label="3,750 Diamonds", amount=15)]
             )
@@ -118,7 +115,7 @@ def send_welcome(message):
             )
             return
 
-        # 3. SECRET PORTAL CONTENT UNLOCKS
+        # 3. SECRET PORTAL CONTENT UNLOCKS (Throne Queen 300 ⭐️ tam eşleşme)
         elif payload.startswith("unlock_content_"):
             card_id = payload.replace("unlock_content_", "")
             
@@ -126,7 +123,7 @@ def send_welcome(message):
                 "card_1": ("First Encounter", 10),
                 "card_2": ("Sharp Glances", 35),
                 "card_3": ("Leather Elegance", 100),
-                "card_4": ("Throne Queen", 300)  # <-- Orijinal yüksek fiyatına güncellendi!
+                "card_4": ("Throne Queen", 300)
             }
 
             title, stars_cost = card_prices.get(card_id, ("Exclusive Secret Content", 50))
@@ -194,35 +191,25 @@ def got_payment(message):
     payload = payment_info.invoice_payload
     telegram_id = message.from_user.id
     
-    # 1. DIAMOND PACK REWARDS
     if payload == "pack_3750":
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 3750)
         bot.send_message(message.chat.id, "🎉 **Payment Successful!** +3,750 Diamonds added! Open the app to spend them.")
-
     elif payload == "pack_15000":
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 15000)
         bot.send_message(message.chat.id, "🎉 **Payment Successful!** +15,000 Diamonds added to your vault!")
-
     elif payload == "pack_62500":
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 62500)
         bot.send_message(message.chat.id, "👑 **Heavy Chest Claimed!** +62,500 Diamonds added to your account.")
-
     elif payload == "pack_300000":
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 300000)
         bot.send_message(message.chat.id, "🏰 **VIP Whale Pack Activated!** +300,000 Diamonds added! Madame Lara honors your supreme devotion!")
-
-    # 2. AUTO-OBEY BOT REWARD
     elif payload == "autobot_pass":
         if 'activate_autobot' in globals(): activate_autobot(telegram_id)
         bot.send_message(message.chat.id, "🤖 **Auto-Obey Bot Activated!** Your bot is now mining diamonds for you in the background.")
-
-    # 3. SECRET PORTAL CONTENT UNLOCKS
     elif payload.startswith("content_"):
         card_id = payload.replace("content_", "")
         if 'unlock_content' in globals(): unlock_content(telegram_id, card_id)
         bot.send_message(message.chat.id, f"🔓 **Content Unlocked!** Card '{card_id}' is now unlocked in your Secret Portal.")
-
-    # 4. ENERGY REFILLS
     elif payload == "db_energy_5":
         if 'add_energy' in globals(): add_energy(telegram_id, 5)
         bot.send_message(message.chat.id, "⚡ **Payment Successful!** 5 Energy refilled.")
