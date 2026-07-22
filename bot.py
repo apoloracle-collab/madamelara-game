@@ -50,8 +50,9 @@ def send_welcome(message):
     username = message.from_user.username or "Devotee"
     
     # --- DEEP LINK CONTROL (Purchase requests triggered from WebApp) ---
-    if len(message.text.split()) > 1:
-        payload = message.text.split()[1]
+    text_parts = message.text.strip().split()
+    if len(text_parts) > 1:
+        payload = text_parts[1].strip()
         
         # 1. DIAMOND VAULT PACKS
         if payload == "buy_pack_3750":
@@ -117,7 +118,7 @@ def send_welcome(message):
 
         # 3. SECRET PORTAL CONTENT UNLOCKS (Throne Queen 300 ⭐️ tam eşleşme)
         elif payload.startswith("unlock_content_"):
-            card_id = payload.replace("unlock_content_", "")
+            card_id = payload.replace("unlock_content_", "").strip()
             
             card_prices = {
                 "card_1": ("First Encounter", 10),
@@ -183,7 +184,7 @@ def send_welcome(message):
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def checkout(pre_checkout_query):
     bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True, 
-                                  error_message="Payment validation failed. Please try again.")
+                                    error_message="Payment validation failed. Please try again.")
 
 @bot.message_handler(content_types=['successful_payment'])
 def got_payment(message):
