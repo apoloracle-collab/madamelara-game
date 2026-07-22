@@ -647,7 +647,7 @@
                         </div>
                         <div class="text-right">
                             <div class="text-xs font-bold text-yellow-400 font-mono">100,000 💎</div>
-                            <div class="text-[10px] text-blue-400 font-bold font-mono">or 100 ⭐️</div>
+                            <div class="text-[10px] text-blue-400 font-bold font-mono">or 400 ⭐️</div>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-blue-900/40">
@@ -655,7 +655,7 @@
                             Buy (100k 💎)
                         </button>
                         <button onclick="buyAutoBot('STARS')" class="bg-[#1e293b] border border-blue-500 hover:bg-blue-900/40 text-blue-300 font-bold text-[11px] py-1.5 rounded-xl transition">
-                            Buy (100 ⭐️)
+                            Buy (400 ⭐️)
                         </button>
                     </div>
                 `;
@@ -959,12 +959,22 @@
         }
 
         function claimSocialTask(taskId, reward, link) {
-            window.open(link, '_blank');
-            setTimeout(() => {
-                state.diamonds += reward;
-                showToast(`Task completed! +${reward} 💎 claimed.`);
-                updateUI();
-            }, 1500);
+            if (taskId === 'telegram') {
+                const deepLinkUrl = "https://t.me/madamelara_bot?start=check_telegram_channel";
+                if (tg && tg.openTelegramLink) {
+                    tg.openTelegramLink(deepLinkUrl);
+                    if (tg.close) setTimeout(() => tg.close(), 100);
+                } else {
+                    window.open(deepLinkUrl, '_blank');
+                }
+            } else {
+                window.open(link, '_blank');
+                setTimeout(() => {
+                    state.diamonds += reward;
+                    showToast(`Task completed! +${reward} 💎 claimed.`);
+                    updateUI();
+                }, 1500);
+            }
         }
 
         function copyRefLink() {
