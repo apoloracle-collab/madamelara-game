@@ -247,19 +247,19 @@
                     <p class="text-xs text-gray-400 mt-0.5">Instant diamond packs via Telegram Stars (1 ⭐️ = 250 💎).</p>
 
                     <div class="grid grid-cols-3 gap-2.5 mt-3">
-                        <div onclick="openStarsPaymentDialog('pack_3750', 'Starter Bag (3,750 Diamonds)')" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
+                        <div onclick="buyGemsPack(3750, 15)" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
                             <div class="text-2xl">💰</div>
                             <div class="font-bold text-xs text-white mt-1">3,750 💎</div>
                             <div class="text-[10px] text-yellow-400 font-bold mt-1">15 ⭐️</div>
                         </div>
 
-                        <div onclick="openStarsPaymentDialog('pack_15000', 'Medium Box (15,000 Diamonds)')" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
+                        <div onclick="buyGemsPack(15000, 60)" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
                             <div class="text-2xl">💎</div>
                             <div class="font-bold text-xs text-white mt-1">15,000 💎</div>
                             <div class="text-[10px] text-yellow-400 font-bold mt-1">60 ⭐️</div>
                         </div>
 
-                        <div onclick="openStarsPaymentDialog('pack_62500', 'Heavy Chest (62,500 Diamonds)')" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
+                        <div onclick="buyGemsPack(62500, 250)" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
                             <div class="text-2xl">👑</div>
                             <div class="font-bold text-xs text-white mt-1">62,500 💎</div>
                             <div class="text-[10px] text-yellow-400 font-bold mt-1">250 ⭐️</div>
@@ -400,15 +400,14 @@
             <h3 id="modal-full-title" class="text-yellow-400 font-bold text-center mt-3 text-sm"></h3>
         </div>
 
-        <!-- YILDIZ SATIN ALMA MODALI GERİ GETİRİLDİ -->
         <div id="stars-payment-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
             <div class="bg-[#181818] border border-amber-500/50 rounded-2xl p-5 max-w-sm w-full text-center space-y-4 shadow-2xl">
                 <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 text-3xl flex items-center justify-center mx-auto border border-amber-500/40">
                     ⭐️
                 </div>
                 <h3 class="text-base font-bold text-white" id="stars-modal-title">Telegram Stars Payment</h3>
-                <p class="text-xs text-gray-300 leading-relaxed">
-                    Clicking below will securely open the bot chat to generate your Star invoice.
+                <p class="text-xs text-gray-300 leading-relaxed" id="stars-modal-desc">
+                    Clicking below will securely generate your invoice and open the payment window.
                 </p>
                 <div class="flex flex-col space-y-2 pt-2">
                     <button id="stars-modal-confirm-btn" onclick="confirmStarsRedirect()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold text-xs py-3 rounded-xl shadow hover:opacity-90 transition flex items-center justify-center space-x-2">
@@ -655,7 +654,7 @@
                         <button onclick="buyAutoBot('POINTS')" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-[11px] py-1.5 rounded-xl transition shadow">
                             Buy (100k 💎)
                         </button>
-                        <button onclick="buyAutoBot('STARS')" class="bg-[#1e293b] border border-blue-500 hover:bg-blue-900/40 text-blue-300 font-bold text-[11px] py-1.5 rounded-xl transition">
+                        <button onclick="openStarsPaymentDialog('buy_autobot', 'Buy Auto-Obey Bot (100 ⭐️)')" class="bg-[#1e293b] border border-blue-500 hover:bg-blue-900/40 text-blue-300 font-bold text-[11px] py-1.5 rounded-xl transition">
                             Buy (100 ⭐️)
                         </button>
                     </div>
@@ -706,8 +705,6 @@
                 } else {
                     showToast("Not enough Diamonds! Needed: 100,000 💎");
                 }
-            } else if (method === 'STARS') {
-                openStarsPaymentDialog('autobot', 'Buy Auto-Obey Bot (100 ⭐️)');
             }
         }
 
@@ -850,6 +847,7 @@
             if (modal) modal.classList.remove('hidden');
         }
 
+        // Güncellenmiş ve kesin çalışan Telegram yönlendirmesi
         function confirmStarsRedirect() {
             closeStarsModal();
             if (pendingStarsCommand) {
@@ -858,8 +856,10 @@
                 
                 if (tg && tg.openTelegramLink) {
                     tg.openTelegramLink(deepLinkUrl);
+                } else if (tg && tg.openLink) {
+                    tg.openLink(deepLinkUrl);
                 } else {
-                    window.open(deepLinkUrl, '_blank');
+                    window.location.href = deepLinkUrl;
                 }
             }
         }
