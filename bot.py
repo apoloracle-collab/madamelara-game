@@ -48,7 +48,6 @@ def send_welcome(message):
     telegram_id = message.from_user.id
     username = message.from_user.username or "Devotee"
     
-    # Save user to database
     if 'get_or_create_slave' in globals():
         try:
             get_or_create_slave(telegram_id, username)
@@ -59,7 +58,6 @@ def send_welcome(message):
     if len(text_parts) > 1:
         payload = text_parts[1].strip()
         
-        # 1. DIAMOND VAULT PACKS
         if payload == "buy_pack_3750":
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -108,7 +106,6 @@ def send_welcome(message):
             )
             return
 
-        # 2. AUTO-OBEY BOT
         elif payload == "buy_autobot":
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -121,7 +118,6 @@ def send_welcome(message):
             )
             return
 
-        # 3. SECRET PORTAL CONTENT UNLOCKS
         elif payload.startswith("unlock_content_"):
             card_id = payload.replace("unlock_content_", "").strip()
             
@@ -145,7 +141,6 @@ def send_welcome(message):
             )
             return
 
-        # 4. ENERGY REFILLS
         elif payload == "buy_energy_5":
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -203,7 +198,7 @@ def got_payment(message):
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 62500)
         bot.send_message(message.chat.id, "👑 **Heavy Chest Claimed!** +62,500 Diamonds added to your account.")
     elif payload == "pack_300000":
-        if 'add_diamonds' in globals( ): add_diamonds(telegram_id, 300000)
+        if 'add_diamonds' in globals(): add_diamonds(telegram_id, 300000)
         bot.send_message(message.chat.id, "🏰 **VIP Whale Pack Activated!** +300,000 Diamonds added! Madame Lara honors your supreme devotion!")
     elif payload == "autobot_pass":
         if 'activate_autobot' in globals(): activate_autobot(telegram_id)
