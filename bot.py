@@ -49,6 +49,13 @@ def send_welcome(message):
     telegram_id = message.from_user.id
     username = message.from_user.username or "Devotee"
     
+    # Kullanıcıyı her durumda veritabanına kaydet/güncelle
+    if 'get_or_create_slave' in globals():
+        try:
+            get_or_create_slave(telegram_id, username)
+        except Exception as e:
+            print(f"Database error on start: {e}")
+
     # --- DEEP LINK CONTROL (Purchase requests triggered from WebApp) ---
     text_parts = message.text.strip().split()
     if len(text_parts) > 1:
@@ -116,7 +123,7 @@ def send_welcome(message):
             )
             return
 
-        # 3. SECRET PORTAL CONTENT UNLOCKS (Throne Queen 300 ⭐️ tam eşleşme)
+        # 3. SECRET PORTAL CONTENT UNLOCKS
         elif payload.startswith("unlock_content_"):
             card_id = payload.replace("unlock_content_", "").strip()
             
@@ -153,10 +160,7 @@ def send_welcome(message):
             )
             return
 
-    # --- STANDARD WELCOME MESSAGE ---
-    if 'get_or_create_slave' in globals():
-        get_or_create_slave(telegram_id, username)
-    
+    # --- STANDARD WELCOME MESSAGE (Only runs if NO deep link payload exists) ---
     welcome_text = (
         "👑 **Welcome to Madame Lara's Portal!** 👑\n\n"
         "This is the exclusive domain where Madame Lara rewards her most loyal followers. "
