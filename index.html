@@ -298,22 +298,22 @@
                                 <div class="text-[10px] text-yellow-400 font-mono mt-0.5">+1,000 💎</div>
                             </div>
                         </div>
-                        <button onclick="claimSocialTask('telegram', 1000, 'https://t.me/madamelara')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
+                        <button onclick="claimSocialTask('telegram', 1000, 'https://t.me/+XrzPL2PXnYxkNjk0')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
                             Claim
                         </button>
                     </div>
 
                     <div class="bg-[#181818] border border-[#2e2e2e] rounded-2xl p-3 flex items-center justify-between">
                         <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-red-600/20 text-red-400 flex items-center justify-center text-xl">
-                                <i class="fa-brands fa-youtube"></i>
+                            <div class="w-10 h-10 rounded-xl bg-neutral-700/40 text-white flex items-center justify-center text-xl">
+                                <i class="fa-brands fa-x-twitter"></i>
                             </div>
                             <div>
-                                <div class="font-bold text-xs text-white">Subscribe YouTube Channel</div>
+                                <div class="font-bold text-xs text-white">Follow on X (Twitter)</div>
                                 <div class="text-[10px] text-yellow-400 font-mono mt-0.5">+1,000 💎</div>
                             </div>
                         </div>
-                        <button onclick="claimSocialTask('youtube', 1000, 'https://youtube.com')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
+                        <button onclick="claimSocialTask('x', 1000, 'https://x.com/laragameportal')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
                             Claim
                         </button>
                     </div>
@@ -407,7 +407,7 @@
                 </div>
                 <h3 class="text-base font-bold text-white" id="stars-modal-title">Telegram Stars Payment</h3>
                 <p class="text-xs text-gray-300 leading-relaxed" id="stars-modal-desc">
-                    Clicking below will directly trigger Telegram's native invoice payment window.
+                    Clicking below will trigger Telegram's invoice payment window directly in your chat.
                 </p>
                 <div class="flex flex-col space-y-2 pt-2">
                     <button id="stars-modal-confirm-btn" onclick="confirmStarsRedirect()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold text-xs py-3 rounded-xl shadow hover:opacity-90 transition flex items-center justify-center space-x-2">
@@ -683,7 +683,7 @@
                         </div>
                         <div class="text-right">
                             <div class="text-[10px] text-gray-400">Mined Diamonds</div>
-                            <div class="text-sm font-bold text-yellow-400 font-mono">+${accumulatedGems.toLocaleString('tr-TR')} 💎</div>
+                            <div class="text-sm font-bold text-yellow-400 font-mono">+${accumulatedGems.toLocaleString('en-US')} 💎</div>
                         </div>
                     </div>
                     <button onclick="harvestAutoBot(${accumulatedGems})" class="w-full mt-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-black font-extrabold text-xs py-2 rounded-xl transition shadow">
@@ -717,14 +717,14 @@
             }
             state.diamonds += amount;
             state.botLastClaimTimestamp = Date.now();
-            showToast(`🤖 Collected +${amount.toLocaleString('tr-TR')} 💎!`);
+            showToast(`🤖 Collected +${amount.toLocaleString('en-US')} 💎!`);
             updateUI();
             renderAutoBotCard();
         }
 
         function updateUI() {
             const scoreEl = document.getElementById('score-display');
-            if (scoreEl) scoreEl.innerText = Math.floor(state.diamonds).toLocaleString('tr-TR');
+            if (scoreEl) scoreEl.innerText = Math.floor(state.diamonds).toLocaleString('en-US');
 
             const multEl = document.getElementById('multiplier-display');
             if (multEl) multEl.innerText = `x${state.activeMultiplier.toFixed(2)}`;
@@ -755,17 +755,17 @@
             const multiLvl = document.getElementById('multitap-level-text');
             if (multiLvl) multiLvl.innerText = state.multitapLevel;
             const multiCost = document.getElementById('multitap-cost-text');
-            if (multiCost) multiCost.innerText = (state.multitapLevel * 2000).toLocaleString('tr-TR');
+            if (multiCost) multiCost.innerText = (state.multitapLevel * 2000).toLocaleString('en-US');
 
             const nrgLvl = document.getElementById('energy-level-text');
             if (nrgLvl) nrgLvl.innerText = state.energyLevel;
             const nrgCost = document.getElementById('energy-cost-text');
-            if (nrgCost) nrgCost.innerText = (state.energyLevel * 3500).toLocaleString('tr-TR');
+            if (nrgCost) nrgCost.innerText = (state.energyLevel * 3500).toLocaleString('en-US');
 
             const rechLvl = document.getElementById('recharge-level-text');
             if (rechLvl) rechLvl.innerText = state.rechargeLevel;
             const rechCost = document.getElementById('recharge-cost-text');
-            if (rechCost) rechCost.innerText = (state.rechargeLevel * 15000).toLocaleString('tr-TR');
+            if (rechCost) rechCost.innerText = (state.rechargeLevel * 15000).toLocaleString('en-US');
         }
 
         function useDailyFullTank() {
@@ -810,7 +810,7 @@
                 showToast(`Multitap upgraded to Level ${state.multitapLevel}! ✋`);
                 updateUI();
             } else {
-                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('tr-TR')} 💎`);
+                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('en-US')} 💎`);
             }
         }
 
@@ -824,7 +824,7 @@
                 showToast(`Energy capacity increased to ${state.maxEnergy}! 🔋`);
                 updateUI();
             } else {
-                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('tr-TR')} 💎`);
+                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('en-US')} 💎`);
             }
         }
 
@@ -837,7 +837,7 @@
                 showToast(`Recharge speed increased to +${state.rechargeRate}/s! ⚡`);
                 updateUI();
             } else {
-                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('tr-TR')} 💎`);
+                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('en-US')} 💎`);
             }
         }
 
@@ -849,22 +849,24 @@
             if (modal) modal.classList.remove('hidden');
         }
 
-        // DÜZELTME: Doğrudan Telegram openInvoice çağrısı (Bot sohbetine gitmeden oyun içinde ödeme penceresini açar)
+        // TELEGRAM STARS REDIRECT FIX:
+        // Use tg.openTelegramLink to switch directly to the Telegram bot chat.
+        // Telegram WebApp SDK routes this command to bot.py which immediately returns the Stars invoice.
         function confirmStarsRedirect() {
             closeStarsModal();
             if (pendingStarsCommand) {
-                if (tg && tg.openInvoice) {
-                    // Bot üzerinden faturayı tetiklemek için Telegram webapp linki yerine doğrudan botuna istek atıyoruz
-                    // Veya doğrudan botun invoice link sistemini tetikleyen Telegram WebApp openInvoice komutu:
-                    const invoiceLinkUrl = `https://t.me/madamelara_bot?start=${pendingStarsCommand}`;
-                    
-                    tg.openInvoice(invoiceLinkUrl, function(status) {
+                const botUsername = "madamelara_bot";
+                const deepLinkUrl = `https://t.me/${botUsername}?start=${pendingStarsCommand}`;
+                
+                if (tg && tg.openTelegramLink) {
+                    tg.openTelegramLink(deepLinkUrl);
+                } else if (tg && tg.openInvoice) {
+                    tg.openInvoice(deepLinkUrl, function(status) {
                         if (status === 'paid') {
                             showToast("🎉 Payment Successful!");
                         }
                     });
                 } else {
-                    const deepLinkUrl = `https://t.me/madamelara_bot?start=${pendingStarsCommand}`;
                     window.open(deepLinkUrl, '_blank');
                 }
             }
@@ -875,7 +877,7 @@
         }
 
         function buyGemsPack(amount, starsCost) {
-            openStarsPaymentDialog(`buy_pack_${amount}`, `Buy ${amount.toLocaleString('tr-TR')} 💎 (${starsCost} ⭐️)`);
+            openStarsPaymentDialog(`buy_pack_${amount}`, `Buy ${amount.toLocaleString('en-US')} 💎 (${starsCost} ⭐️)`);
         }
 
         function renderPortalCards() {
@@ -909,7 +911,7 @@
                         ${!isUnlocked ? `
                             <div class="grid grid-cols-2 gap-1.5 mt-2">
                                 <button onclick="unlockCard('${card.id}', 'POINTS')" class="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-extrabold text-[10px] py-1.5 rounded-lg transition">
-                                    ${card.cost.toLocaleString('tr-TR')} 💎
+                                    ${card.cost.toLocaleString('en-US')} 💎
                                 </button>
                                 <button onclick="unlockCard('${card.id}', 'STARS')" class="bg-[#222] border border-[#333] hover:border-amber-400 text-yellow-400 font-extrabold text-[10px] py-1.5 rounded-lg transition">
                                     ${card.starsCost} ⭐️
@@ -944,7 +946,7 @@
                     updateUI();
                     renderPortalCards();
                 } else {
-                    showToast(`Not enough Diamonds! Needed: ${card.cost.toLocaleString('tr-TR')} 💎`);
+                    showToast(`Not enough Diamonds! Needed: ${card.cost.toLocaleString('en-US')} 💎`);
                 }
             } else if (paymentMethod === 'STARS') {
                 openStarsPaymentDialog(`unlock_content_${cardId}`, `Unlock: ${card.title} (${card.starsCost} ⭐️)`);
@@ -977,7 +979,7 @@
             const userEl = document.getElementById('profile-username-text');
             if (userEl) userEl.innerText = `@${telegramUsername}`;
             const touchesEl = document.getElementById('stat-touches');
-            if (touchesEl) touchesEl.innerText = state.totalTouches.toLocaleString('tr-TR');
+            if (touchesEl) touchesEl.innerText = state.totalTouches.toLocaleString('en-US');
             const passiveEl = document.getElementById('stat-passive');
             if (passiveEl) passiveEl.innerText = `${state.passiveIncomeRate} 💎/hr`;
 
