@@ -853,12 +853,15 @@
             closeStarsModal();
             if (pendingStarsCommand) {
                 const botUsername = "madamelara_bot";
-                const deepLinkUrl = `https://t.me/${botUsername}?start=${pendingStarsCommand}`;
+                // Telegram mini app native openInvoice or direct telegram bot interaction support
+                const directUrl = `https://t.me/${botUsername}?start=${pendingStarsCommand}`;
                 
                 if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(deepLinkUrl);
+                    tg.openTelegramLink(directUrl);
+                } else if (tg && tg.openLink) {
+                    tg.openLink(directUrl, { try_instant_view: false });
                 } else {
-                    window.location.href = deepLinkUrl;
+                    window.location.href = directUrl;
                 }
             }
         }
