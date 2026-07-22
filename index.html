@@ -76,7 +76,6 @@
     </style>
 </head>
 <body>
-
     <div id="app-container" class="w-full max-w-md h-full sm:h-[92vh] sm:max-h-[850px] bg-[#111111] relative flex flex-col overflow-hidden sm:rounded-3xl border border-[#222] shadow-2xl">
 
         <header class="w-full bg-[#161616] border-b border-[#262626] px-4 py-3 flex items-center justify-between z-20 shrink-0">
@@ -407,11 +406,11 @@
                 </div>
                 <h3 class="text-base font-bold text-white" id="stars-modal-title">Telegram Stars Payment</h3>
                 <p class="text-xs text-gray-300 leading-relaxed" id="stars-modal-desc">
-                    Your payment invoice is being sent to your Telegram chat. Click the button below to open the payment invoice window in your Telegram chat.
+                    Click below to open the secure Telegram Stars payment invoice instantly.
                 </p>
                 <div class="flex flex-col space-y-2 pt-2">
                     <button id="stars-modal-confirm-btn" onclick="confirmStarsRedirect()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold text-xs py-3 rounded-xl shadow hover:opacity-90 transition flex items-center justify-center space-x-2">
-                        <span>⚡ Go to Chat & Pay</span>
+                        <span>⚡ Pay with Stars</span>
                     </button>
                     <button onclick="closeStarsModal()" class="w-full bg-[#252525] text-gray-400 text-xs py-2.5 rounded-xl hover:text-white transition">
                         Close
@@ -495,7 +494,6 @@
             }
         ];
 
-        /* Tüm 10 Rozet Eksiksiz Şekilde Geri Yüklendi */
         const badgesData = [
             { id: 'badge_chain', name: 'Chain of Obedience', req: '500 Total Taps', activeImg: 'assets/badge_chain_active.png', lockedImg: 'assets/badge_chain_locked.png' },
             { id: 'badge_whisper', name: 'Whispering Devotee', req: '1,000 Diamonds Earned', activeImg: 'assets/badge_whispering_active.png', lockedImg: 'assets/badge_whispering_locked.png' },
