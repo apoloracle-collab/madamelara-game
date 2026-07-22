@@ -6,16 +6,11 @@ import telebot
 from telebot import types
 from dotenv import load_dotenv
 
-# Import database functions (Make sure database.py contains these helpers)
 try:
     from database import get_or_create_slave, add_energy, add_diamonds, activate_autobot, unlock_content
 except ImportError:
-    # Safe fallback wrappers if specific helper functions are being expanded in database.py
     from database import get_or_create_slave, add_energy
 
-# ==========================================================================
-# 1. ENVIRONMENT LOAD & BOT INITIALIZATION
-# ==========================================================================
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -27,9 +22,6 @@ bot = telebot.TeleBot(TOKEN)
 # Production Vercel App URL
 VERCEL_WEB_APP_URL = "https://madamelara-game.vercel.app"
 
-# ==========================================================================
-# 2. RENDER HTTP HEALTH CHECK SERVER (PREVENTS TIMEOUT / SLEEP)
-# ==========================================================================
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -37,19 +29,24 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"Madame Lara Bot is awake and listening.")
 
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+
+    def log_message(self, format, *args):
+        # Silence routine health check logs from Render/UptimeRobot
+        return
+
 def run_health_server():
     port = int(os.getenv("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
     print(f"Health check server running on port {port}...")
     server.serve_forever()
 
-# Start the health check HTTP server in a separate background thread
 server_thread = threading.Thread(target=run_health_server, daemon=True)
 server_thread.start()
 
-# ==========================================================================
-# 3. COMMAND HANDLERS & DEEP LINK INVOICES (TELEGRAM STARS / XTR)
-# ==========================================================================
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     telegram_id = message.from_user.id
@@ -186,9 +183,6 @@ def send_welcome(message):
     
     bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
 
-# ==========================================================================
-# 4. TELEGRAM STARS (XTR) PAYMENT PROCESSORS
-# ==========================================================================
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def checkout(pre_checkout_query):
     bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True, 
@@ -233,9 +227,6 @@ def got_payment(message):
         if 'add_energy' in globals(): add_energy(telegram_id, 5)
         bot.send_message(message.chat.id, "⚡ **Payment Successful!** 5 Energy refilled.")
 
-# ==========================================================================
-# 5. BOT EXECUTION LOOP
-# ==========================================================================
 if __name__ == "__main__":
     print("Madame Lara's Telegram Bot engine is initialized and actively listening...")
-    bot.infinity_polling()
+    bot.infinity_polling(skip_pending=True)
