@@ -437,7 +437,9 @@
 
         const telegramUsername = tg?.initDataUnsafe?.user?.username || "Devotee";
 
-        let state = {
+        const STORAGE_KEY = "madame_lara_game_state_v2";
+
+        const defaultState = {
             diamonds: 0,
             energy: 500,
             maxEnergy: 500,
@@ -453,8 +455,57 @@
             botLastClaimTimestamp: Date.now(),
             passiveIncomeRate: 0,
             totalTouches: 0,
-            unlockedContents: []
+            unlockedContents: [],
+            claimedRef: false,
+            claimedChannelTask: false
         };
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    return { ...defaultState, ...parsed };
+                }
+            } catch (e) {
+                console.error("Failed to load state", e);
+            }
+            return { ...defaultState };
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.error("Failed to save state", e);
+            }
+        }
+
+        let state = loadState();
+
+        // Process Telegram start_param deep links
+        const currentUserId = tg?.initDataUnsafe?.user?.id || "12345";
+        
+        // Dynamically set referral link for this user
+        window.addEventListener('DOMContentLoaded', () => {
+            const refInput = document.getElementById('ref-link-input');
+            if (refInput) {
+                refInput.value = `https://t.me/madamelara_bot?start=ref_${currentUserId}`;
+            }
+        });
+
+        const startParam = tg?.initDataUnsafe?.start_param;
+        if (startParam) {
+            if (startParam.startsWith('ref_') && !state.claimedRef) {
+                state.claimedRef = true;
+                state.diamonds += 2500;
+                setTimeout(() => showToast("🎉 Welcome via Referral! +2,500 💎 claimed!"), 1000);
+            } else if (startParam === 'channel_verified' && !state.claimedChannelTask) {
+                state.claimedChannelTask = true;
+                state.diamonds += 1000;
+                setTimeout(() => showToast("🎉 Telegram Channel Task Verified! +1,000 💎 claimed!"), 1000);
+            }
+        }
 
         const demoCards = [
             { 
@@ -706,7 +757,7 @@
                     showToast("Not enough Diamonds! Needed: 100,000 💎");
                 }
             } else if (method === 'STARS') {
-                openStarsPaymentDialog("buy_autobot", "Buy Auto-Obey Bot (100 ⭐️)");
+                openStarsPaymentDialog("buy_autobot", "Buy Auto-Obey Bot (400 ⭐️)");
             }
         }
 
@@ -723,6 +774,7 @@
         }
 
         function updateUI() {
+            saveState();
             const scoreEl = document.getElementById('score-display');
             if (scoreEl) scoreEl.innerText = Math.floor(state.diamonds).toLocaleString('en-US');
 
