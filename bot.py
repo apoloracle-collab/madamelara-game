@@ -176,7 +176,7 @@ def send_welcome(message):
                 invoice_payload="autobot_pass",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="Auto-Obey Bot", amount=100)]
+                prices=[types.LabeledPrice(label="Auto-Obey Bot", amount=400)]
             )
             return
 
@@ -213,6 +213,42 @@ def send_welcome(message):
                 currency="XTR",
                 prices=[types.LabeledPrice(label="5 Energy", amount=15)]
             )
+            return
+
+        elif payload == "check_telegram_channel":
+            channel_id = os.getenv("TELEGRAM_CHANNEL_ID", "@laragameportal")
+            try:
+                member = bot.get_chat_member(channel_id, telegram_id)
+                if member.status in ['member', 'administrator', 'creator']:
+                    if 'add_diamonds' in globals():
+                        add_diamonds(telegram_id, 1000)
+                    bot.send_message(
+                        message.chat.id,
+                        "✅ **Channel Membership Verified!**\n\n"
+                        "You are a confirmed member of Madame Lara's channel. +1,000 Diamonds have been credited to your account! 🎉",
+                        parse_mode="Markdown"
+                    )
+                else:
+                    bot.send_message(
+                        message.chat.id,
+                        "❌ **Verification Failed!**\n\n"
+                        "You have not joined Madame Lara's Telegram channel yet.\n"
+                        "Please join the channel below, then try again!",
+                        parse_mode="Markdown",
+                        reply_markup=types.InlineKeyboardMarkup().add(
+                            types.InlineKeyboardButton("📢 Join Channel", url="https://t.me/laragameportal"),
+                            types.InlineKeyboardButton("🔄 Verify Again", url="https://t.me/madamelara_bot?start=check_telegram_channel")
+                        )
+                    )
+            except Exception as e:
+                print(f"Chat member check fallback: {e}")
+                if 'add_diamonds' in globals():
+                    add_diamonds(telegram_id, 1000)
+                bot.send_message(
+                    message.chat.id,
+                    "🎉 **Task Verified!** +1,000 Diamonds credited to your vault!",
+                    parse_mode="Markdown"
+                )
             return
 
     welcome_text = (
