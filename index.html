@@ -860,6 +860,11 @@
                 
                 if (tg && tg.openTelegramLink) {
                     tg.openTelegramLink(deepLinkUrl);
+                    if (tg.close) {
+                        setTimeout(() => {
+                            tg.close();
+                        }, 100);
+                    }
                 } else if (tg && tg.openInvoice) {
                     tg.openInvoice(deepLinkUrl, function(status) {
                         if (status === 'paid') {
