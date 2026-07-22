@@ -407,7 +407,7 @@
                 </div>
                 <h3 class="text-base font-bold text-white" id="stars-modal-title">Telegram Stars Payment</h3>
                 <p class="text-xs text-gray-300 leading-relaxed" id="stars-modal-desc">
-                    Clicking below will securely generate your invoice and open the payment window.
+                    Clicking below will directly trigger Telegram's native invoice payment window.
                 </p>
                 <div class="flex flex-col space-y-2 pt-2">
                     <button id="stars-modal-confirm-btn" onclick="confirmStarsRedirect()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold text-xs py-3 rounded-xl shadow hover:opacity-90 transition flex items-center justify-center space-x-2">
@@ -654,7 +654,7 @@
                         <button onclick="buyAutoBot('POINTS')" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-[11px] py-1.5 rounded-xl transition shadow">
                             Buy (100k 💎)
                         </button>
-                        <button onclick="openStarsPaymentDialog('buy_autobot', 'Buy Auto-Obey Bot (100 ⭐️)')" class="bg-[#1e293b] border border-blue-500 hover:bg-blue-900/40 text-blue-300 font-bold text-[11px] py-1.5 rounded-xl transition">
+                        <button onclick="buyAutoBot('STARS')" class="bg-[#1e293b] border border-blue-500 hover:bg-blue-900/40 text-blue-300 font-bold text-[11px] py-1.5 rounded-xl transition">
                             Buy (100 ⭐️)
                         </button>
                     </div>
@@ -705,6 +705,8 @@
                 } else {
                     showToast("Not enough Diamonds! Needed: 100,000 💎");
                 }
+            } else if (method === 'STARS') {
+                openStarsPaymentDialog("buy_autobot", "Buy Auto-Obey Bot (100 ⭐️)");
             }
         }
 
@@ -847,19 +849,23 @@
             if (modal) modal.classList.remove('hidden');
         }
 
-        // Güncellenmiş ve kesin çalışan Telegram yönlendirmesi
+        // DÜZELTME: Doğrudan Telegram openInvoice çağrısı (Bot sohbetine gitmeden oyun içinde ödeme penceresini açar)
         function confirmStarsRedirect() {
             closeStarsModal();
             if (pendingStarsCommand) {
-                const botUsername = "madamelara_bot";
-                const deepLinkUrl = `https://t.me/${botUsername}?start=${pendingStarsCommand}`;
-                
-                if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(deepLinkUrl);
-                } else if (tg && tg.openLink) {
-                    tg.openLink(deepLinkUrl);
+                if (tg && tg.openInvoice) {
+                    // Bot üzerinden faturayı tetiklemek için Telegram webapp linki yerine doğrudan botuna istek atıyoruz
+                    // Veya doğrudan botun invoice link sistemini tetikleyen Telegram WebApp openInvoice komutu:
+                    const invoiceLinkUrl = `https://t.me/madamelara_bot?start=${pendingStarsCommand}`;
+                    
+                    tg.openInvoice(invoiceLinkUrl, function(status) {
+                        if (status === 'paid') {
+                            showToast("🎉 Payment Successful!");
+                        }
+                    });
                 } else {
-                    window.location.href = deepLinkUrl;
+                    const deepLinkUrl = `https://t.me/madamelara_bot?start=${pendingStarsCommand}`;
+                    window.open(deepLinkUrl, '_blank');
                 }
             }
         }
@@ -1000,7 +1006,7 @@
 
                 badgeEl.innerHTML = `
                     <div class="w-12 h-12 rounded-lg overflow-hidden my-1 flex items-center justify-center bg-[#222]">
-                        <img src="${imgSrc}" onerror="this.onerror=null; this.src='https://placehold.co/100x100/222/d4af37?text=Badge'" class="w-full h-full object-contain">
+                        <img src="${imgSrc}" onerror="this.onerror=null; this.src='https://placehold.co/100x100/222/d4af37?text=Badge'" class="w-full h-full object-cover">
                     </div>
                     <div class="font-bold text-[10px] ${isUnlocked ? 'text-yellow-400' : 'text-gray-400'} truncate w-full mt-1">${badge.name}</div>
                     <div class="text-[9px] ${isUnlocked ? 'text-emerald-400 font-bold' : 'text-gray-500'} mt-0.5">${isUnlocked ? 'Unlocked' : 'Locked'}</div>
