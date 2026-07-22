@@ -123,10 +123,10 @@ def send_welcome(message):
             card_id = payload.replace("unlock_content_", "")
             
             card_prices = {
-                "card_1": ("First Encounter", 15),
+                "card_1": ("First Encounter", 10),
                 "card_2": ("Sharp Glances", 35),
-                "card_3": ("Leather Elegance", 90),
-                "card_4": ("Throne Queen", 180)
+                "card_3": ("Leather Elegance", 100),
+                "card_4": ("Throne Queen", 300)  # <-- Orijinal yüksek fiyatına güncellendi!
             }
 
             title, stars_cost = card_prices.get(card_id, ("Exclusive Secret Content", 50))
