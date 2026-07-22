@@ -498,8 +498,7 @@
         if (startParam) {
             if (startParam.startsWith('ref_') && !state.claimedRef) {
                 state.claimedRef = true;
-                state.diamonds += 2500;
-                setTimeout(() => showToast("🎉 Welcome via Referral! +2,500 💎 claimed!"), 1000);
+                setTimeout(() => showToast("🎉 Welcome! You joined via a friend's invitation!"), 1000);
             } else if (startParam === 'channel_verified' && !state.claimedChannelTask) {
                 state.claimedChannelTask = true;
                 state.diamonds += 1000;
