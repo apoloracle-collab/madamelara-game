@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Madame Lara - Tap-to-Earn Engine</title>
     
-    <!-- External Libraries: Tailwind CSS, FontAwesome, Google Fonts, Telegram WebApp SDK -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,22 +22,18 @@
             padding: 0;
         }
 
-        html, body {
-            background-color: #0b0b0b;
+        body {
+            background-color: #080808;
             color: #ffffff;
             font-family: 'Arimo', sans-serif;
             overflow: hidden;
             touch-action: manipulation;
-            width: 100vw;
             height: 100vh;
-            height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
-            position: fixed;
         }
 
-        /* Floating +1 Particle Effect (TapSwap Style) */
         .tap-particle {
             position: fixed;
             font-weight: 900;
@@ -52,28 +47,13 @@
         }
 
         @keyframes floatUpFade {
-            0% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-            50% {
-                opacity: 0.9;
-                transform: translateY(-40px) scale(1.3);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-85px) scale(0.7);
-            }
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { opacity: 0.9; transform: translateY(-40px) scale(1.3); }
+            100% { opacity: 0; transform: translateY(-85px) scale(0.7); }
         }
 
-        /* Gold Glow and 3D Elastic Touch Button */
-        .gold-glow {
-            box-shadow: 0 0 30px rgba(212, 175, 55, 0.4);
-        }
-
-        .bot-glow {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-        }
+        .gold-glow { box-shadow: 0 0 30px rgba(212, 175, 55, 0.4); }
+        .bot-glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
 
         .lara-coin-btn {
             transition: transform 0.08s cubic-bezier(0.25, 1, 0.5, 1);
@@ -90,26 +70,16 @@
             100% { box-shadow: 0 0 50px #ffa500, inset 0 0 35px #ffa500; }
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #121212;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #d4af37;
-            border-radius: 4px;
-        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #d4af37; border-radius: 4px; }
     </style>
 </head>
 <body>
 
-    <div id="app-container" class="w-full h-full max-w-md sm:h-[92vh] sm:max-h-[850px] bg-[#111111] relative flex flex-col overflow-hidden sm:rounded-3xl border border-[#222] shadow-2xl">
+    <div id="app-container" class="w-full max-w-md h-full sm:h-[92vh] sm:max-h-[850px] bg-[#111111] relative flex flex-col overflow-hidden sm:rounded-3xl border border-[#222] shadow-2xl">
 
-        <!-- TOP HEADER & STATS BAR -->
-        <header class="w-full bg-[#161616] border-b border-[#262626] px-4 py-3 flex items-center justify-between z-25 shrink-0">
-            <!-- User Rank Badge -->
+        <header class="w-full bg-[#161616] border-b border-[#262626] px-4 py-3 flex items-center justify-between z-20 shrink-0">
             <div class="flex items-center space-x-2">
                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8a6200] flex items-center justify-center text-black text-base shadow font-bold">
                     👑
@@ -120,13 +90,11 @@
                 </div>
             </div>
 
-            <!-- Diamond Counter -->
             <div class="flex items-center space-x-1.5 bg-[#202020] px-3.5 py-1.5 rounded-full border border-[#333]">
                 <span class="text-base">💎</span>
                 <span id="score-display" class="font-bold text-yellow-400 text-sm tracking-wide font-mono">0</span>
             </div>
 
-            <!-- Multiplier Indicator -->
             <div class="flex items-center">
                 <span class="bg-[#d4af37] text-black text-[11px] font-black px-2 py-1 rounded shadow-sm">
                     <span id="multiplier-display">x1.00</span>
@@ -134,19 +102,16 @@
             </div>
         </header>
 
-        <!-- MAIN CONTENT AREA -->
         <main class="flex-1 relative overflow-y-auto pb-20">
 
-            <!-- 1. EARN SCREEN (MULTI-TOUCH TAP AREA) -->
+            <!-- EARN TAB -->
             <section id="screen-earn" class="screen-panel flex flex-col justify-between items-center h-full p-4">
-                
-                <!-- Passive Income Flow Panel -->
                 <div class="w-full bg-[#18150c] border border-[#3d3211] rounded-2xl p-3 flex justify-between items-center text-xs">
                     <div class="flex items-center space-x-2.5">
                         <span class="text-2xl">💰</span>
                         <div>
                             <div class="text-gray-300 font-medium text-[11px]">Passive Income Flow</div>
-                            <div class="text-yellow-500 font-bold font-mono"><span id="passive-rate-display">0</span> 💎 / hour</div>
+                            <div class="text-yellow-500 font-bold font-mono"><span id="passive-rate-display">0</span> 💎 / hr</div>
                         </div>
                     </div>
                     <button onclick="claimPassiveIncome()" class="bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold px-3.5 py-1.5 rounded-xl text-xs shadow hover:opacity-90 transition">
@@ -154,12 +119,10 @@
                     </button>
                 </div>
 
-                <!-- Madame Lara Multi-Touch Target Area -->
                 <div class="my-auto flex flex-col items-center justify-center py-4 w-full">
                     <div id="lara-target-box" class="lara-coin-btn relative w-64 h-64 sm:w-72 sm:h-72 rounded-full border-4 border-[#d4af37] p-2 shadow-2xl cursor-pointer select-none gold-glow bg-[#1a1a1a]">
                         <img id="lara-image" src="assets/lara_50_1.png" onerror="this.onerror=null; this.src='https://placehold.co/400x400/1a1a1a/d4af37?text=Madame+Lara'" alt="Madame Lara" class="w-full h-full object-cover rounded-full pointer-events-none">
                         
-                        <!-- Tap Label -->
                         <div class="absolute inset-x-0 bottom-4 text-center pointer-events-none">
                             <span class="bg-black/80 text-[#d4af37] text-xs font-extrabold px-4 py-1.5 rounded-full border border-[#d4af37]/50 tracking-wider shadow-lg">
                                 TAP & OBEY
@@ -168,7 +131,6 @@
                     </div>
                 </div>
 
-                <!-- Energy Bar & Quick Booster -->
                 <div class="w-full space-y-2.5">
                     <div class="flex justify-between items-center text-xs px-1">
                         <div class="flex items-center space-x-1.5 text-emerald-400 font-bold">
@@ -181,21 +143,19 @@
                         </button>
                     </div>
 
-                    <!-- Energy Fill Bar -->
                     <div class="w-full h-4 bg-[#222] rounded-full overflow-hidden border border-[#333] p-0.5">
                         <div id="energy-bar" class="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-yellow-400 rounded-full transition-all duration-150" style="width: 100%;"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- 2. BOOSTERS SCREEN -->
+            <!-- BOOSTERS TAB -->
             <section id="screen-boosters" class="screen-panel hidden p-4 space-y-5">
                 <div>
                     <h2 class="text-base font-bold text-[#d4af37]">Free Daily Boosts</h2>
                     <p class="text-xs text-gray-400 mt-0.5">Refreshes every 24 hours.</p>
                     
                     <div class="grid grid-cols-2 gap-3 mt-3">
-                        <!-- Full Tank -->
                         <div onclick="useDailyFullTank()" class="bg-[#181818] border border-[#2e2e2e] hover:border-[#d4af37] rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer transition">
                             <div class="flex justify-between items-start">
                                 <span class="text-2xl">🔋</span>
@@ -207,7 +167,6 @@
                             </div>
                         </div>
 
-                        <!-- Taping Guru -->
                         <div onclick="useDailyGuru()" class="bg-[#181818] border border-[#2e2e2e] hover:border-[#d4af37] rounded-2xl p-3.5 flex flex-col justify-between cursor-pointer transition">
                             <div class="flex justify-between items-start">
                                 <span class="text-2xl">🔥</span>
@@ -221,26 +180,21 @@
                     </div>
                 </div>
 
-                <!-- Auto-Obey Bot -->
                 <div>
                     <h2 class="text-base font-bold text-blue-400 flex items-center space-x-1.5">
                         <span>🤖</span>
                         <span>Auto-Obey Bot</span>
                     </h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Mines diamonds automatically while you sleep (Up to 12 Hours).</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Mines diamonds while you sleep (Up to 12 Hours).</p>
 
-                    <div id="autobot-card-container" class="mt-3 bg-[#121824] border border-blue-900/60 rounded-2xl p-3.5 bot-glow transition-all">
-                        <!-- Loaded via JS -->
-                    </div>
+                    <div id="autobot-card-container" class="mt-3 bg-[#121824] border border-blue-900/60 rounded-2xl p-3.5 bot-glow transition-all"></div>
                 </div>
 
-                <!-- Permanent Upgrades -->
                 <div>
                     <h2 class="text-base font-bold text-[#d4af37]">Permanent Upgrades</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Increase your character power and energy capacity.</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Increase character power and energy capacity.</p>
 
                     <div class="space-y-2.5 mt-3">
-                        <!-- Multitap Upgrade -->
                         <div onclick="buyMultitapUpgrade()" class="bg-[#161616] border border-[#282828] hover:border-[#d4af37] rounded-2xl p-3 flex items-center justify-between cursor-pointer transition">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 rounded-xl bg-[#222] flex items-center justify-center text-xl">✋</div>
@@ -256,7 +210,6 @@
                             </div>
                         </div>
 
-                        <!-- Energy Limit Upgrade -->
                         <div onclick="buyEnergyUpgrade()" class="bg-[#161616] border border-[#282828] hover:border-[#d4af37] rounded-2xl p-3 flex items-center justify-between cursor-pointer transition">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 rounded-xl bg-[#222] flex items-center justify-center text-xl">🔋</div>
@@ -272,13 +225,12 @@
                             </div>
                         </div>
 
-                        <!-- Recharge Speed Upgrade -->
                         <div onclick="buyRechargeUpgrade()" class="bg-[#161616] border border-[#282828] hover:border-[#d4af37] rounded-2xl p-3 flex items-center justify-between cursor-pointer transition">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 rounded-xl bg-[#222] flex items-center justify-center text-xl">⚡</div>
                                 <div>
                                     <div class="font-bold text-xs text-white">Recharge Speed</div>
-                                    <div class="text-[10px] text-gray-400">Speeds up energy recovery per second</div>
+                                    <div class="text-[10px] text-gray-400">Speeds up energy recovery</div>
                                     <div class="text-[10px] text-yellow-500 font-mono mt-0.5">Level <span id="recharge-level-text">1</span></div>
                                 </div>
                             </div>
@@ -290,10 +242,9 @@
                     </div>
                 </div>
 
-                <!-- Gem Vault Store (Telegram Stars Integration) -->
                 <div>
-                    <h2 class="text-base font-bold text-[#d4af37]">Gem Vault Store</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Instantly purchase diamond packs with Telegram Stars (1 ⭐️ = 250 💎).</p>
+                    <h2 class="text-base font-bold text-[#d4af37]">Diamond Vault Store</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Instant diamond packs via Telegram Stars (1 ⭐️ = 250 💎).</p>
 
                     <div class="grid grid-cols-3 gap-2.5 mt-3">
                         <div onclick="buyGemsPack(3750, 15)" class="bg-[#181818] border border-[#333] hover:border-amber-500 rounded-xl p-3 text-center cursor-pointer transition">
@@ -317,23 +268,21 @@
                 </div>
             </section>
 
-            <!-- 3. SECRET PORTAL SCREEN -->
+            <!-- PORTAL TAB -->
             <section id="screen-portal" class="screen-panel hidden p-4 space-y-4">
                 <div>
                     <h2 class="text-base font-bold text-[#d4af37]">Secret Portal</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Unlock Madame Lara's exclusive content and multiply passive income.</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Unlock secret content and multiply passive income.</p>
                 </div>
 
-                <div id="gallery-grid-container" class="grid grid-cols-2 gap-3 pt-2">
-                    <!-- Cards Loaded via JS -->
-                </div>
+                <div id="gallery-grid-container" class="grid grid-cols-2 gap-3 pt-2"></div>
             </section>
 
-            <!-- 4. TASKS & INVITES SCREEN -->
+            <!-- TASKS TAB -->
             <section id="screen-tasks" class="screen-panel hidden p-4 space-y-4">
                 <div>
                     <h2 class="text-base font-bold text-[#d4af37]">Tasks & Invites</h2>
-                    <p class="text-xs text-gray-400 mt-0.5">Earn diamonds by joining the community and inviting friends.</p>
+                    <p class="text-xs text-gray-400 mt-0.5">Join community channels and invite friends to earn diamonds.</p>
                 </div>
 
                 <div class="space-y-2.5">
@@ -350,7 +299,7 @@
                             </div>
                         </div>
                         <button onclick="claimSocialTask('telegram', 1000, 'https://t.me/madamelara')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
-                            Complete
+                            Claim
                         </button>
                     </div>
 
@@ -365,7 +314,7 @@
                             </div>
                         </div>
                         <button onclick="claimSocialTask('youtube', 1000, 'https://youtube.com')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
-                            Complete
+                            Claim
                         </button>
                     </div>
                 </div>
@@ -375,7 +324,7 @@
 
                     <div class="bg-[#161616] border border-[#2e2e2e] rounded-2xl p-3.5 text-center space-y-3">
                         <p class="text-xs text-gray-300">
-                            Earn <strong class="text-yellow-400">2,500 💎</strong> instantly for every friend you invite!
+                            Earn instant <strong class="text-yellow-400">2,500 💎</strong> for every friend you invite!
                         </p>
 
                         <div class="flex space-x-2">
@@ -388,7 +337,7 @@
                 </div>
             </section>
 
-            <!-- 5. PROFILE & BADGES SCREEN -->
+            <!-- PROFILE TAB -->
             <section id="screen-profile" class="screen-panel hidden p-4 space-y-4">
                 <div class="text-center bg-[#181818] border border-[#2a2a2a] rounded-2xl p-4 gold-glow">
                     <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-[#d4af37] to-amber-200 text-black text-3xl font-bold flex items-center justify-center mx-auto shadow-lg">
@@ -399,28 +348,25 @@
 
                     <div class="grid grid-cols-2 gap-2.5 mt-4 text-left text-xs bg-[#111] p-3 rounded-xl border border-[#222]">
                         <div>
-                            <span class="text-gray-400 block text-[10px]">Total Touches</span>
+                            <span class="text-gray-400 block text-[10px]">Total Taps</span>
                             <span id="stat-touches" class="font-bold font-mono text-white text-sm">0</span>
                         </div>
                         <div>
                             <span class="text-gray-400 block text-[10px]">Passive Rate</span>
-                            <span id="stat-passive" class="font-bold font-mono text-yellow-400 text-sm">0 💎/hour</span>
+                            <span id="stat-passive" class="font-bold font-mono text-yellow-400 text-sm">0 💎/hr</span>
                         </div>
                     </div>
                 </div>
 
                 <div>
                     <h3 class="text-xs font-bold text-[#d4af37] uppercase tracking-wider mb-2">Achievement Badges</h3>
-                    <div id="badges-grid-container" class="grid grid-cols-3 gap-2">
-                        <!-- Loaded via JS -->
-                    </div>
+                    <div id="badges-grid-container" class="grid grid-cols-3 gap-2"></div>
                 </div>
             </section>
 
         </main>
 
-        <!-- BOTTOM NAVIGATION BAR -->
-        <nav class="absolute bottom-0 inset-x-0 bg-[#141414] border-t border-[#2a2a2a] px-2 py-2 flex justify-around items-center z-30">
+        <nav class="absolute bottom-0 inset-x-0 bg-[#141414] border-t border-[#2a2a2a] px-2 py-2 flex justify-around items-center z-30 pb-safe">
             <button id="nav-earn" onclick="switchTab('earn')" class="nav-btn flex flex-col items-center text-yellow-500 space-y-1">
                 <span class="text-lg"><i class="fa-solid fa-hand-pointer"></i></span>
                 <span class="text-[10px] font-bold">Earn</span>
@@ -447,16 +393,13 @@
             </button>
         </nav>
 
-        <!-- MODALS & NOTIFICATION SYSTEM -->
-        
-        <!-- Full Screen Image Modal -->
+        <!-- FULLSCREEN MODALS -->
         <div id="image-modal" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
             <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white text-3xl font-bold p-2">&times;</button>
             <img id="modal-full-img" src="" alt="Content" class="max-w-full max-h-[75vh] object-contain rounded-2xl border-2 border-[#d4af37] shadow-2xl">
             <h3 id="modal-full-title" class="text-yellow-400 font-bold text-center mt-3 text-sm"></h3>
         </div>
 
-        <!-- TELEGRAM STARS PAYMENT DIALOG MODAL -->
         <div id="stars-payment-modal" class="hidden fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
             <div class="bg-[#181818] border border-amber-500/50 rounded-2xl p-5 max-w-sm w-full text-center space-y-4 shadow-2xl">
                 <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 text-3xl flex items-center justify-center mx-auto border border-amber-500/40">
@@ -477,7 +420,6 @@
             </div>
         </div>
 
-        <!-- Notification Toast Bar -->
         <div id="toast-msg" class="hidden fixed top-16 inset-x-8 bg-amber-500 text-black font-bold text-xs text-center py-2.5 px-4 rounded-xl shadow-xl z-50 transition-all duration-300">
             System Message
         </div>
@@ -485,25 +427,21 @@
     </div>
 
     <script>
-        /* Telegram Mini App Initialization & Fullscreen Theme Colors */
         const tg = window.Telegram?.WebApp;
         if (tg) {
             tg.expand();
             tg.ready();
-            try {
-                tg.setHeaderColor('#161616');
-                tg.setBackgroundColor('#0b0b0b');
-            } catch (e) {}
+            tg.setHeaderColor('#111111');
+            tg.setBackgroundColor('#111111');
         }
 
         const telegramUsername = tg?.initDataUnsafe?.user?.username || "Devotee";
 
-        /* Game State */
         let state = {
             diamonds: 0,
             energy: 500,
             maxEnergy: 500,
-            rechargeRate: 1, // energy regeneration per second
+            rechargeRate: 1,
             activeMultiplier: 1.0,
             multitapLevel: 1,
             energyLevel: 1,
@@ -513,12 +451,12 @@
             isGuruActive: false,
             hasAutoBot: false,
             botLastClaimTimestamp: Date.now(),
-            passiveIncomeRate: 0, // Diamonds / hour
+            passiveIncomeRate: 0,
             totalTouches: 0,
             unlockedContents: []
         };
 
-        /* Secret Portal Content Cards */
+        /* Portal Kartları (Throne Queen 300 ⭐️ orijinal yüksek değeriyle güncellendi) */
         const demoCards = [
             { 
                 id: 'card_1', 
@@ -533,7 +471,7 @@
                 id: 'card_2', 
                 title: 'Sharp Glances', 
                 cost: 8000, 
-                starsCost: 32, 
+                starsCost: 35, 
                 passiveBonus: 80, 
                 bonusText: '💰 +80 💎/hr & 🔋 +250 Energy', 
                 img: 'assets/lara_100_1.png' 
@@ -558,19 +496,17 @@
             }
         ];
 
-        /* Profile Badges */
         const badgesData = [
             { id: 'badge_chain', name: 'Chain of Obedience', req: '500 Total Taps', activeImg: 'assets/badge_chain_active.png', lockedImg: 'assets/badge_chain_locked.png' },
             { id: 'badge_whisper', name: 'Whispering Devotee', req: '1,000 Diamonds Earned', activeImg: 'assets/badge_whispering_active.png', lockedImg: 'assets/badge_whispering_locked.png' },
             { id: 'badge_hoarder', name: 'Diamond Hoarder', req: '10,000 Diamonds Balance', activeImg: 'assets/badge_hoarder_active.png', lockedImg: 'assets/badge_hoarder_locked.png' },
             { id: 'badge_throne', name: 'Throne Seeker', req: 'Unlock 1st Content', activeImg: 'assets/badge_throne_active.png', lockedImg: 'assets/badge_throne_locked.png' },
             { id: 'badge_secret', name: 'Secret Seeker', req: 'Unlock 2nd Content', activeImg: 'assets/badge_secret_active.png', lockedImg: 'assets/badge_secret_locked.png' },
-            { id: 'badge_mystic', name: 'Mystic Tome', req: 'Purchase Auto Bot', activeImg: 'assets/badge_mystic_active.png', lockedImg: 'assets/badge_mystic_locked.png' }
+            { id: 'badge_mystic', name: 'Mystic Tome', req: 'Buy Auto Bot', activeImg: 'assets/badge_mystic_active.png', lockedImg: 'assets/badge_mystic_locked.png' }
         ];
 
-        let pendingStarsLink = "";
+        let pendingStarsCommand = "";
 
-        /* Tab Switcher */
         function switchTab(tabId) {
             document.querySelectorAll('.screen-panel').forEach(panel => panel.classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -592,13 +528,11 @@
             if (tabId === 'profile') renderProfileData();
         }
 
-        /* FLUID MULTI-TOUCH & 3D TILT (TAPSWAP STYLE) */
         const laraTarget = document.getElementById('lara-target-box');
 
         if (laraTarget) {
             laraTarget.addEventListener('touchstart', function(e) {
-                e.preventDefault(); // Prevent zoom and double-tap delay
-                
+                e.preventDefault();
                 const rect = laraTarget.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
@@ -612,7 +546,6 @@
 
                     if (state.energy >= tapPower) {
                         state.energy = Math.max(0, state.energy - tapPower);
-                        
                         const guruMultiplier = state.isGuruActive ? 5 : 1;
                         const earned = Math.floor(tapPower * state.activeMultiplier * guruMultiplier);
                         state.diamonds += earned;
@@ -621,7 +554,7 @@
 
                         createTapParticle(touch.clientX, touch.clientY, `+${earned}`);
                     } else {
-                        showToast("Not enough energy!");
+                        showToast("Low Energy!");
                         break;
                     }
                 }
@@ -630,32 +563,28 @@
                     const firstTouch = touches[0];
                     const deltaX = (firstTouch.clientX - centerX) / (rect.width / 2);
                     const deltaY = (firstTouch.clientY - centerY) / (rect.height / 2);
-
                     const tiltX = -deltaY * 16;
                     const tiltY = deltaX * 16;
 
                     laraTarget.style.transform = `perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(0.93)`;
-                    
                     tg?.HapticFeedback?.impactOccurred?.('medium');
                     updateUI();
                 }
             }, { passive: false });
 
-            laraTarget.addEventListener('touchend', function(e) {
+            laraTarget.addEventListener('touchend', function() {
                 laraTarget.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)';
             });
 
-            laraTarget.addEventListener('touchcancel', function(e) {
+            laraTarget.addEventListener('touchcancel', function() {
                 laraTarget.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1)';
             });
 
-            /* Desktop Mouse Click Support */
             laraTarget.addEventListener('click', function(e) {
                 if ('ontouchstart' in window) return;
-                
                 const tapPower = state.multitapLevel;
                 if (state.energy < tapPower) {
-                    showToast("Not enough energy!");
+                    showToast("Low Energy!");
                     return;
                 }
 
@@ -666,7 +595,6 @@
                 state.totalTouches++;
 
                 createTapParticle(e.clientX, e.clientY, `+${earned}`);
-                
                 laraTarget.style.transform = 'perspective(600px) rotateX(8deg) scale(0.94)';
                 setTimeout(() => {
                     laraTarget.style.transform = 'perspective(600px) rotateX(0deg) scale(1)';
@@ -676,7 +604,6 @@
             });
         }
 
-        /* Floating Number Particle Generator */
         function createTapParticle(x, y, text) {
             const p = document.createElement('div');
             p.className = 'tap-particle';
@@ -684,29 +611,23 @@
             p.style.left = `${x - 18}px`;
             p.style.top = `${y - 35}px`;
             document.body.appendChild(p);
-
             setTimeout(() => p.remove(), 700);
         }
 
-        /* Automatic Energy Regeneration & Passive Income Loop */
         setInterval(() => {
             if (state.energy < state.maxEnergy) {
                 state.energy = Math.min(state.maxEnergy, state.energy + state.rechargeRate);
             }
-
             if (state.passiveIncomeRate > 0) {
                 state.diamonds += (state.passiveIncomeRate / 3600);
             }
-
             updateUI();
-            
             const botCard = document.getElementById('autobot-card-container');
             if (botCard && state.hasAutoBot) {
                 renderAutoBotCard();
             }
         }, 1000);
 
-        /* Auto-Obey Bot Card View */
         function renderAutoBotCard() {
             const container = document.getElementById('autobot-card-container');
             if (!container) return;
@@ -728,10 +649,10 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2 mt-3 pt-2 border-t border-blue-900/40">
                         <button onclick="buyAutoBot('POINTS')" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-[11px] py-1.5 rounded-xl transition shadow">
-                            Buy 100,000 💎
+                            Buy (100k 💎)
                         </button>
                         <button onclick="buyAutoBot('STARS')" class="bg-[#1e293b] border border-blue-500 hover:bg-blue-900/40 text-blue-300 font-bold text-[11px] py-1.5 rounded-xl transition">
-                            Buy 100 ⭐️
+                            Buy (100 ⭐️)
                         </button>
                     </div>
                 `;
@@ -758,12 +679,12 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-[10px] text-gray-400">Accumulated</div>
-                            <div class="text-sm font-bold text-yellow-400 font-mono">+${accumulatedGems.toLocaleString('en-US')} 💎</div>
+                            <div class="text-[10px] text-gray-400">Mined Diamonds</div>
+                            <div class="text-sm font-bold text-yellow-400 font-mono">+${accumulatedGems.toLocaleString('tr-TR')} 💎</div>
                         </div>
                     </div>
                     <button onclick="harvestAutoBot(${accumulatedGems})" class="w-full mt-3 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-black font-extrabold text-xs py-2 rounded-xl transition shadow">
-                        Claim Accumulated Diamonds
+                        Harvest Mined Diamonds
                     </button>
                 `;
             }
@@ -779,30 +700,28 @@
                     updateUI();
                     renderAutoBotCard();
                 } else {
-                    showToast("Insufficient Diamonds! Required: 100,000 💎");
+                    showToast("Not enough Diamonds! Needed: 100,000 💎");
                 }
             } else if (method === 'STARS') {
-                openStarsPaymentDialog("https://t.me/madamelara_bot?start=buy_autobot", "Buy Auto-Obey Bot (100 ⭐️)");
+                openStarsPaymentDialog("buy_autobot", "Buy Auto-Obey Bot (100 ⭐️)");
             }
         }
 
         function harvestAutoBot(amount) {
             if (amount <= 0) {
-                showToast("No diamonds accumulated yet!");
+                showToast("No diamonds mined yet!");
                 return;
             }
-
             state.diamonds += amount;
             state.botLastClaimTimestamp = Date.now();
-            showToast(`🤖 Awesome! +${amount.toLocaleString('en-US')} 💎 claimed!`);
+            showToast(`🤖 Collected +${amount.toLocaleString('tr-TR')} 💎!`);
             updateUI();
             renderAutoBotCard();
         }
 
-        /* Update UI */
         function updateUI() {
             const scoreEl = document.getElementById('score-display');
-            if (scoreEl) scoreEl.innerText = Math.floor(state.diamonds).toLocaleString('en-US');
+            if (scoreEl) scoreEl.innerText = Math.floor(state.diamonds).toLocaleString('tr-TR');
 
             const multEl = document.getElementById('multiplier-display');
             if (multEl) multEl.innerText = `x${state.activeMultiplier.toFixed(2)}`;
@@ -833,35 +752,34 @@
             const multiLvl = document.getElementById('multitap-level-text');
             if (multiLvl) multiLvl.innerText = state.multitapLevel;
             const multiCost = document.getElementById('multitap-cost-text');
-            if (multiCost) multiCost.innerText = (state.multitapLevel * 2000).toLocaleString('en-US');
+            if (multiCost) multiCost.innerText = (state.multitapLevel * 2000).toLocaleString('tr-TR');
 
             const nrgLvl = document.getElementById('energy-level-text');
             if (nrgLvl) nrgLvl.innerText = state.energyLevel;
             const nrgCost = document.getElementById('energy-cost-text');
-            if (nrgCost) nrgCost.innerText = (state.energyLevel * 3500).toLocaleString('en-US');
+            if (nrgCost) nrgCost.innerText = (state.energyLevel * 3500).toLocaleString('tr-TR');
 
             const rechLvl = document.getElementById('recharge-level-text');
             if (rechLvl) rechLvl.innerText = state.rechargeLevel;
             const rechCost = document.getElementById('recharge-cost-text');
-            if (rechCost) rechCost.innerText = (state.rechargeLevel * 15000).toLocaleString('en-US');
+            if (rechCost) rechCost.innerText = (state.rechargeLevel * 15000).toLocaleString('tr-TR');
         }
 
-        /* Booster Functions */
         function useDailyFullTank() {
             if (state.dailyTankCount <= 0) {
-                showToast("You have used all Full Tank boosts for today!");
+                showToast("All Full Tank boosts used for today!");
                 return;
             }
             state.dailyTankCount--;
             state.energy = state.maxEnergy;
             document.getElementById('full-tank-count').innerText = `${state.dailyTankCount}/3`;
-            showToast("Energy tank fully refilled! 🔋");
+            showToast("Energy fully refilled! 🔋");
             updateUI();
         }
 
         function useDailyGuru() {
             if (state.dailyGuruCount <= 0) {
-                showToast("You have used all Taping Guru boosts for today!");
+                showToast("All Taping Guru boosts used for today!");
                 return;
             }
             if (state.isGuruActive) return;
@@ -889,7 +807,7 @@
                 showToast(`Multitap upgraded to Level ${state.multitapLevel}! ✋`);
                 updateUI();
             } else {
-                showToast(`Insufficient Diamonds! Required: ${cost.toLocaleString('en-US')} 💎`);
+                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('tr-TR')} 💎`);
             }
         }
 
@@ -900,10 +818,10 @@
                 state.energyLevel++;
                 state.maxEnergy += 500;
                 state.energy += 500;
-                showToast(`Energy capacity is now ${state.maxEnergy}! 🔋`);
+                showToast(`Energy capacity increased to ${state.maxEnergy}! 🔋`);
                 updateUI();
             } else {
-                showToast(`Insufficient Diamonds! Required: ${cost.toLocaleString('en-US')} 💎`);
+                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('tr-TR')} 💎`);
             }
         }
 
@@ -916,13 +834,12 @@
                 showToast(`Recharge speed increased to +${state.rechargeRate}/s! ⚡`);
                 updateUI();
             } else {
-                showToast(`Insufficient Diamonds! Required: ${cost.toLocaleString('en-US')} 💎`);
+                showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('tr-TR')} 💎`);
             }
         }
 
-        /* TELEGRAM STARS PAYMENT DIALOG & REDIRECT */
-        function openStarsPaymentDialog(link, title) {
-            pendingStarsLink = link;
+        function openStarsPaymentDialog(commandCode, title) {
+            pendingStarsCommand = commandCode;
             const modal = document.getElementById('stars-payment-modal');
             const titleEl = document.getElementById('stars-modal-title');
             if (titleEl) titleEl.innerText = title || "Telegram Stars Payment";
@@ -931,11 +848,14 @@
 
         function confirmStarsRedirect() {
             closeStarsModal();
-            if (pendingStarsLink) {
+            if (pendingStarsCommand) {
+                const botUsername = "madamelara_bot";
+                const deepLinkUrl = `https://t.me/${botUsername}?start=${pendingStarsCommand}`;
+                
                 if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(pendingStarsLink);
+                    tg.openTelegramLink(deepLinkUrl);
                 } else {
-                    window.open(pendingStarsLink, '_blank');
+                    window.open(deepLinkUrl, '_blank');
                 }
             }
         }
@@ -945,10 +865,9 @@
         }
 
         function buyGemsPack(amount, starsCost) {
-            openStarsPaymentDialog(`https://t.me/madamelara_bot?start=buy_pack_${amount}`, `Buy ${amount.toLocaleString('en-US')} 💎 (${starsCost} ⭐️)`);
+            openStarsPaymentDialog(`buy_pack_${amount}`, `Buy ${amount.toLocaleString('tr-TR')} 💎 (${starsCost} ⭐️)`);
         }
 
-        /* Render Secret Portal Cards */
         function renderPortalCards() {
             const container = document.getElementById('gallery-grid-container');
             if (!container) return;
@@ -980,7 +899,7 @@
                         ${!isUnlocked ? `
                             <div class="grid grid-cols-2 gap-1.5 mt-2">
                                 <button onclick="unlockCard('${card.id}', 'POINTS')" class="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-black font-extrabold text-[10px] py-1.5 rounded-lg transition">
-                                    ${card.cost.toLocaleString('en-US')} 💎
+                                    ${card.cost.toLocaleString('tr-TR')} 💎
                                 </button>
                                 <button onclick="unlockCard('${card.id}', 'STARS')" class="bg-[#222] border border-[#333] hover:border-amber-400 text-yellow-400 font-extrabold text-[10px] py-1.5 rounded-lg transition">
                                     ${card.starsCost} ⭐️
@@ -1006,7 +925,7 @@
                     state.diamonds -= card.cost;
                     state.unlockedContents.push(card.id);
                     state.passiveIncomeRate += card.passiveBonus;
-                    showToast(`"${card.title}" unlocked! +${card.passiveBonus} 💎/hr passive income! 🎉`);
+                    showToast(`"${card.title}" unlocked! +${card.passiveBonus} 💎/hr passive! 🎉`);
                     
                     if (cardId === 'card_1') state.activeMultiplier += 0.10;
                     if (cardId === 'card_2') { state.maxEnergy += 250; state.energy += 250; }
@@ -1015,19 +934,18 @@
                     updateUI();
                     renderPortalCards();
                 } else {
-                    showToast(`Insufficient Diamonds! Required: ${card.cost.toLocaleString('en-US')} 💎`);
+                    showToast(`Not enough Diamonds! Needed: ${card.cost.toLocaleString('tr-TR')} 💎`);
                 }
             } else if (paymentMethod === 'STARS') {
-                openStarsPaymentDialog(`https://t.me/madamelara_bot?start=unlock_content_${cardId}`, `Unlock: ${card.title} (${card.starsCost} ⭐️)`);
+                openStarsPaymentDialog(`unlock_content_${cardId}`, `Unlock: ${card.title} (${card.starsCost} ⭐️)`);
             }
         }
 
-        /* Tasks & Referrals */
         function claimSocialTask(taskId, reward, link) {
             window.open(link, '_blank');
             setTimeout(() => {
                 state.diamonds += reward;
-                showToast(`Task completed! +${reward} 💎 earned.`);
+                showToast(`Task completed! +${reward} 💎 claimed.`);
                 updateUI();
             }, 1500);
         }
@@ -1045,12 +963,11 @@
             showToast(`Passive income is added automatically! Current: ${state.passiveIncomeRate} 💎/hr`);
         }
 
-        /* Profile Data & Badges */
         function renderProfileData() {
             const userEl = document.getElementById('profile-username-text');
             if (userEl) userEl.innerText = `@${telegramUsername}`;
             const touchesEl = document.getElementById('stat-touches');
-            if (touchesEl) touchesEl.innerText = state.totalTouches.toLocaleString('en-US');
+            if (touchesEl) touchesEl.innerText = state.totalTouches.toLocaleString('tr-TR');
             const passiveEl = document.getElementById('stat-passive');
             if (passiveEl) passiveEl.innerText = `${state.passiveIncomeRate} 💎/hr`;
 
@@ -1084,7 +1001,7 @@
                     <div class="font-bold text-[10px] ${isUnlocked ? 'text-yellow-400' : 'text-gray-400'} truncate w-full mt-1">${badge.name}</div>
                     <div class="text-[9px] ${isUnlocked ? 'text-emerald-400 font-bold' : 'text-gray-500'} mt-0.5">${isUnlocked ? 'Unlocked' : 'Locked'}</div>
                 `;
-                container.appChild ? container.appendChild(badgeEl) : container.appendChild(badgeEl);
+                container.appendChild(badgeEl);
             });
         }
 
@@ -1102,11 +1019,11 @@
             const toast = document.getElementById('toast-msg');
             if (!toast) return;
             toast.innerText = msg;
+            toast.classList.add('opacity-100');
             toast.classList.remove('hidden');
             setTimeout(() => toast.classList.add('hidden'), 2500);
         }
 
-        /* Initial Boot */
         updateUI();
         renderAutoBotCard();
     </script>
