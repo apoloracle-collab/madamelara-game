@@ -1,5 +1,7 @@
 import os
 import time
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import telebot
 from telebot import types
 from dotenv import load_dotenv
@@ -18,7 +20,7 @@ load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TOKEN:
-    raise ValueError("CRITICAL ERROR: Missing TELEGRAM_BOT_TOKEN in .env file.")
+    raise ValueError("CRITICAL ERROR: Missing TELEGRAM_BOT_TOKEN in environment variables.")
 
 bot = telebot.TeleBot(TOKEN)
 
@@ -26,14 +28,34 @@ bot = telebot.TeleBot(TOKEN)
 VERCEL_WEB_APP_URL = "https://madamelara-game.vercel.app"
 
 # ==========================================================================
-# 2. COMMAND HANDLERS & DEEP LINK INVOICES
+# 2. RENDER HTTP HEALTH CHECK SERVER (PREVENTS TIMEOUT / SLEEP)
+# ==========================================================================
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Madame Lara Bot is awake and listening.")
+
+def run_health_server():
+    port = int(os.getenv("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    print(f"Health check server running on port {port}...")
+    server.serve_forever()
+
+# Start the health check HTTP server in a separate background thread
+server_thread = threading.Thread(target=run_health_server, daemon=True)
+server_thread.start()
+
+# ==========================================================================
+# 3. COMMAND HANDLERS & DEEP LINK INVOICES (TELEGRAM STARS / XTR)
 # ==========================================================================
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     telegram_id = message.from_user.id
     username = message.from_user.username or "Devotee"
     
-    # --- DEEP LINK CONTROL (Purchase requests from WebApp) ---
+    # --- DEEP LINK CONTROL (Purchase requests triggered from WebApp) ---
     if len(message.text.split()) > 1:
         payload = message.text.split()[1]
         
@@ -103,7 +125,6 @@ def send_welcome(message):
         elif payload.startswith("unlock_content_"):
             card_id = payload.replace("unlock_content_", "")
             
-            # Pricing tiers based on content cards
             card_prices = {
                 "card_1": ("First Encounter", 15),
                 "card_2": ("Sharp Glances", 35),
@@ -124,7 +145,7 @@ def send_welcome(message):
             )
             return
 
-        # 4. ENERGY REFILLS (Legacy)
+        # 4. ENERGY REFILLS
         elif payload == "buy_energy_5":
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -138,7 +159,8 @@ def send_welcome(message):
             return
 
     # --- STANDARD WELCOME MESSAGE ---
-    get_or_create_slave(telegram_id, username)
+    if 'get_or_create_slave' in globals():
+        get_or_create_slave(telegram_id, username)
     
     welcome_text = (
         "👑 **Welcome to Madame Lara's Portal!** 👑\n\n"
@@ -165,7 +187,7 @@ def send_welcome(message):
     bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
 
 # ==========================================================================
-# 3. TELEGRAM STARS (XTR) PAYMENT PROCESSORS
+# 4. TELEGRAM STARS (XTR) PAYMENT PROCESSORS
 # ==========================================================================
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def checkout(pre_checkout_query):
@@ -181,11 +203,11 @@ def got_payment(message):
     # 1. DIAMOND PACK REWARDS
     if payload == "pack_3750":
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 3750)
-        bot.send_message(message.chat.id, "🎉 **Payment Successful!** +3,750 Diamonds have been added to your account! Open the app to spend them.")
+        bot.send_message(message.chat.id, "🎉 **Payment Successful!** +3,750 Diamonds added! Open the app to spend them.")
 
     elif payload == "pack_15000":
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 15000)
-        bot.send_message(message.chat.id, "🎉 **Payment Successful!** +15,000 Diamonds have been added to your vault!")
+        bot.send_message(message.chat.id, "🎉 **Payment Successful!** +15,000 Diamonds added to your vault!")
 
     elif payload == "pack_62500":
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 62500)
@@ -193,7 +215,7 @@ def got_payment(message):
 
     elif payload == "pack_300000":
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 300000)
-        bot.send_message(message.chat.id, "🏰 **VIP Whale Pack Activated!** +300,000 Diamonds added. Madame Lara honors your supreme devotion!")
+        bot.send_message(message.chat.id, "🏰 **VIP Whale Pack Activated!** +300,000 Diamonds added! Madame Lara honors your supreme devotion!")
 
     # 2. AUTO-OBEY BOT REWARD
     elif payload == "autobot_pass":
@@ -208,12 +230,12 @@ def got_payment(message):
 
     # 4. ENERGY REFILLS
     elif payload == "db_energy_5":
-        add_energy(telegram_id, 5) 
+        if 'add_energy' in globals(): add_energy(telegram_id, 5)
         bot.send_message(message.chat.id, "⚡ **Payment Successful!** 5 Energy refilled.")
 
 # ==========================================================================
-# 4. BOT EXECUTION LOOP
+# 5. BOT EXECUTION LOOP
 # ==========================================================================
 if __name__ == "__main__":
-    print("Madame Lara's Telegram Bot engine is initialized and actively listening to slaves...")
+    print("Madame Lara's Telegram Bot engine is initialized and actively listening...")
     bot.infinity_polling()
