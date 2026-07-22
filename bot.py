@@ -43,6 +43,40 @@ def run_health_server():
 server_thread = threading.Thread(target=run_health_server, daemon=True)
 server_thread.start()
 
+@bot.message_handler(commands=['get_invoice_link'])
+def handle_get_invoice_link(message):
+    telegram_id = message.from_user.id
+    text_parts = message.text.strip().split()
+    if len(text_parts) > 1:
+        payload = text_parts[1].strip()
+        prices_map = {
+            "pack_3750": ("Starter Bag (3,750 Diamonds)", 15),
+            "pack_15000": ("Medium Box (15,000 Diamonds)", 60),
+            "pack_62500": ("Heavy Chest (62,500 Diamonds)", 250),
+            "pack_300000": ("VIP Whale Pack (300,000 Diamonds)", 1000),
+            "autobot_pass": ("Auto-Obey Bot Activation", 100),
+        }
+        if payload in prices_map:
+            title, amount = prices_map[payload]
+            try:
+                link = bot.create_invoice_link(title, "Secure Telegram Stars Payment", payload, "", "XTR", [types.LabeledPrice(title, amount)])
+                bot.send_message(message.chat.id, f"🔗 **Invoice Link Ready:**\n`{link}`\n\nTap to pay securely.", parse_mode="Markdown")
+                return
+            except Exception as e:
+                bot.send_message(message.chat.id, f"Error generating link: {e}")
+                return
+        elif payload.startswith("content_"):
+            card_id = payload.replace("content_", "")
+            card_prices = {"card_1": ("First Encounter", 10), "card_2": ("Sharp Glances", 35), "card_3": ("Leather Elegance", 100), "card_4": ("Throne Queen", 300)}
+            title, stars_cost = card_prices.get(card_id, ("Exclusive Content", 50))
+            try:
+                link = bot.create_invoice_link(f"Secret Content: {title}", f"Unlock '{title}' permanently.", f"content_{card_id}", "", "XTR", [types.LabeledPrice(title, stars_cost)])
+                bot.send_message(message.chat.id, f"🔗 **Invoice Link Ready:**\n`{link}`", parse_mode="Markdown")
+                return
+            except Exception as e:
+                bot.send_message(message.chat.id, f"Error generating link: {e}")
+                return
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     telegram_id = message.from_user.id
