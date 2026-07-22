@@ -230,13 +230,10 @@ def send_welcome(message):
                         )
                     except Exception as e:
                         print(f"Could not send message to referrer: {e}")
-            
-            if 'add_diamonds' in globals():
-                add_diamonds(telegram_id, 2500)
 
             bot.send_message(
                 message.chat.id,
-                "🎉 **Welcome!** You joined via a friend's referral link! Both you and your friend received **+2,500 Diamonds**! 💎",
+                "🎉 **Welcome!** You joined via a friend's referral link! Tap 'Play Open Portal' below to start playing!",
                 parse_mode="Markdown"
             )
 
