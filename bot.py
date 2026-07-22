@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 try:
     from database import get_or_create_slave, add_energy, add_diamonds, activate_autobot, unlock_content
 except ImportError:
+    # Fallback if database helper functions are missing
     from database import get_or_create_slave, add_energy
 
 load_dotenv()
@@ -59,19 +60,46 @@ def handle_get_invoice_link(message):
         if payload in prices_map:
             title, amount = prices_map[payload]
             try:
-                link = bot.create_invoice_link(title, "Secure Telegram Stars Payment", payload, "", "XTR", [types.LabeledPrice(title, amount)])
-                bot.send_message(message.chat.id, f"🔗 **Invoice Link Ready:**\n`{link}`\n\nTap to pay securely.", parse_mode="Markdown")
+                link = bot.create_invoice_link(
+                    title,
+                    "Secure Telegram Stars Payment",
+                    payload,
+                    "",
+                    "XTR",
+                    [types.LabeledPrice(title, amount)]
+                )
+                bot.send_message(
+                    message.chat.id,
+                    f"🔗 **Invoice Link Ready:**\n`{link}`\n\nTap to pay securely.",
+                    parse_mode="Markdown"
+                )
                 return
             except Exception as e:
                 bot.send_message(message.chat.id, f"Error generating link: {e}")
                 return
         elif payload.startswith("content_"):
             card_id = payload.replace("content_", "")
-            card_prices = {"card_1": ("First Encounter", 10), "card_2": ("Sharp Glances", 35), "card_3": ("Leather Elegance", 100), "card_4": ("Throne Queen", 300)}
+            card_prices = {
+                "card_1": ("First Encounter", 10),
+                "card_2": ("Sharp Glances", 35),
+                "card_3": ("Leather Elegance", 100),
+                "card_4": ("Throne Queen", 300)
+            }
             title, stars_cost = card_prices.get(card_id, ("Exclusive Content", 50))
             try:
-                link = bot.create_invoice_link(f"Secret Content: {title}", f"Unlock '{title}' permanently.", f"content_{card_id}", "", "XTR", [types.LabeledPrice(title, stars_cost)])
-                bot.send_message(message.chat.id, f"🔗 **Invoice Link Ready:**\n`{link}`", parse_mode="Markdown")
+                link = bot.create_invoice_link(
+                    f"Secret Content: {title}",
+                    f"Unlock '{title}' permanently.",
+                    f"content_{card_id}",
+                    "",
+                    "XTR",
+                    [types.LabeledPrice(title, stars_cost)]
+                )
+                bot.send_message(
+                    message.chat.id,
+                    f"🔗 **Invoice Link Ready:**\n`{link}`",
+                    parse_mode="Markdown"
+                )
                 return
             except Exception as e:
                 bot.send_message(message.chat.id, f"Error generating link: {e}")
@@ -204,7 +232,7 @@ def send_welcome(message):
     
     web_app_info = types.WebAppInfo(url=full_app_url)
     btn_enter = types.InlineKeyboardButton("👑 Play / Open Portal", web_app=web_app_info)
-    btn_join = types.InlineKeyboardButton("📢 Join Channel", url="https://t.me/madamelara")
+    btn_join = types.InlineKeyboardButton("📢 Join Channel", url="https://t.me/+XrzPL2PXnYxkNjk0")
     
     markup.row(btn_enter)
     markup.row(btn_join)
@@ -213,8 +241,11 @@ def send_welcome(message):
 
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def checkout(pre_checkout_query):
-    bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True, 
-                                    error_message="Payment validation failed. Please try again.")
+    bot.answer_pre_checkout_query(
+        pre_checkout_query.id,
+        ok=True,
+        error_message="Payment validation failed. Please try again."
+    )
 
 @bot.message_handler(content_types=['successful_payment'])
 def got_payment(message):
