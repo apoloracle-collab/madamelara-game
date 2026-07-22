@@ -215,6 +215,31 @@ def send_welcome(message):
             )
             return
 
+        elif payload.startswith("ref_"):
+            referrer_str = payload.replace("ref_", "").strip()
+            if referrer_str.isdigit():
+                referrer_id = int(referrer_str)
+                if referrer_id != telegram_id:
+                    if 'add_diamonds' in globals():
+                        add_diamonds(referrer_id, 2500)
+                    try:
+                        bot.send_message(
+                            referrer_id,
+                            f"🎉 **Referral Bonus!** User @{username} joined using your referral link! You earned **+2,500 Diamonds**! 💎",
+                            parse_mode="Markdown"
+                        )
+                    except Exception as e:
+                        print(f"Could not send message to referrer: {e}")
+            
+            if 'add_diamonds' in globals():
+                add_diamonds(telegram_id, 2500)
+
+            bot.send_message(
+                message.chat.id,
+                "🎉 **Welcome!** You joined via a friend's referral link! Both you and your friend received **+2,500 Diamonds**! 💎",
+                parse_mode="Markdown"
+            )
+
         elif payload == "check_telegram_channel":
             channel_id = os.getenv("TELEGRAM_CHANNEL_ID", "@laragameportal")
             try:
