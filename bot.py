@@ -18,7 +18,6 @@ if not TOKEN:
     raise ValueError("CRITICAL ERROR: Missing TELEGRAM_BOT_TOKEN in environment variables.")
 
 bot = telebot.TeleBot(TOKEN)
-
 VERCEL_WEB_APP_URL = "https://madamelara-game.vercel.app"
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -49,14 +48,13 @@ def send_welcome(message):
     telegram_id = message.from_user.id
     username = message.from_user.username or "Devotee"
     
-    # Kullanıcıyı her durumda veritabanına kaydet/güncelle
+    # Save user to database
     if 'get_or_create_slave' in globals():
         try:
             get_or_create_slave(telegram_id, username)
         except Exception as e:
             print(f"Database error on start: {e}")
 
-    # --- DEEP LINK CONTROL (Purchase requests triggered from WebApp) ---
     text_parts = message.text.strip().split()
     if len(text_parts) > 1:
         payload = text_parts[1].strip()
@@ -160,7 +158,6 @@ def send_welcome(message):
             )
             return
 
-    # --- STANDARD WELCOME MESSAGE (Only runs if NO deep link payload exists) ---
     welcome_text = (
         "👑 **Welcome to Madame Lara's Portal!** 👑\n\n"
         "This is the exclusive domain where Madame Lara rewards her most loyal followers. "
@@ -206,7 +203,7 @@ def got_payment(message):
         if 'add_diamonds' in globals(): add_diamonds(telegram_id, 62500)
         bot.send_message(message.chat.id, "👑 **Heavy Chest Claimed!** +62,500 Diamonds added to your account.")
     elif payload == "pack_300000":
-        if 'add_diamonds' in globals(): add_diamonds(telegram_id, 300000)
+        if 'add_diamonds' in globals( ): add_diamonds(telegram_id, 300000)
         bot.send_message(message.chat.id, "🏰 **VIP Whale Pack Activated!** +300,000 Diamonds added! Madame Lara honors your supreme devotion!")
     elif payload == "autobot_pass":
         if 'activate_autobot' in globals(): activate_autobot(telegram_id)
