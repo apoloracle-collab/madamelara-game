@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Madame Lara - Tap-to-Earn Engine (TapSwap & Badges Integrated)</title>
+    <title>Madame Lara - Tap-to-Earn Engine</title>
     
     <!-- External Libraries: Tailwind CSS, FontAwesome Icons, Google Fonts, Telegram WebApp SDK, Supabase SDK -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -49,44 +49,20 @@
         }
 
         @keyframes floatUpFade {
-            0% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-            50% {
-                transform: translateY(-40px) scale(1.3);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-80px) scale(0.8);
-            }
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            50% { transform: translateY(-40px) scale(1.3); }
+            100% { opacity: 0; transform: translateY(-80px) scale(0.8); }
         }
 
         /* Gold Outer Glow & Press States */
-        .gold-glow {
-            box-shadow: 0 0 25px rgba(212, 175, 55, 0.35);
-        }
+        .gold-glow { box-shadow: 0 0 25px rgba(212, 175, 55, 0.35); }
+        .bot-glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+        .badge-glow { box-shadow: 0 0 18px rgba(212, 175, 55, 0.5); border-color: #d4af37 !important; }
 
-        .bot-glow {
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
-        }
+        .lara-coin-btn { transition: transform 0.08s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .lara-coin-btn:active { transform: scale(0.92); }
 
-        .badge-glow {
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
-            border-color: #d4af37 !important;
-        }
-
-        .lara-coin-btn {
-            transition: transform 0.08s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .lara-coin-btn:active {
-            transform: scale(0.92);
-        }
-
-        .guru-active {
-            animation: guruFlame 0.4s infinite alternate;
-        }
+        .guru-active { animation: guruFlame 0.4s infinite alternate; }
 
         @keyframes guruFlame {
             0% { box-shadow: 0 0 20px #ff4500, inset 0 0 15px #ff4500; }
@@ -94,16 +70,9 @@
         }
 
         /* Custom Scrollbars */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #121212;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #d4af37;
-            border-radius: 4px;
-        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #121212; }
+        ::-webkit-scrollbar-thumb { background: #d4af37; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -114,7 +83,7 @@
         <header class="w-full bg-[#161616] border-b border-[#262626] px-4 py-3 flex items-center justify-between z-20 shrink-0">
             <!-- User Rank Badge -->
             <div class="flex items-center space-x-2 cursor-pointer" onclick="switchTab('tasks'); switchTasksTab('leagues');">
-                <div id="league-icon-box" class="w-9 h-9 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8a6200] flex items-center justify-center text-black text-base shadow">
+                <div id="league-icon-box" class="w-9 h-9 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8a6200] flex items-center justify-center text-black text-base shadow font-bold">
                     🏆
                 </div>
                 <div>
@@ -157,10 +126,11 @@
                     </button>
                 </div>
 
-                <!-- Madame Lara Click Target -->
+                <!-- Madame Lara Click Target (Uses exact asset files) -->
                 <div class="my-auto flex flex-col items-center justify-center py-4 w-full">
                     <div id="lara-target-box" onclick="handleTapEvent(event)" class="lara-coin-btn relative w-64 h-64 sm:w-72 sm:h-72 rounded-full border-4 border-[#d4af37] p-2 shadow-2xl cursor-pointer select-none gold-glow bg-[#1a1a1a]">
-                        <img id="lara-image" src="assets/lara_50_1.png" onerror="this.src='https://placehold.co/400x400/1a1a1a/d4af37?text=Madame+Lara'" alt="Madame Lara" class="w-full h-full object-cover rounded-full pointer-events-none">
+                        <!-- ONERROR is added so that if local 'assets/' are missing (like in Preview), a placeholder shows instead of broken icon -->
+                        <img id="lara-image" src="assets/lara_50_1.png" onerror="this.onerror=null; this.src='https://placehold.co/400x400/1a1a1a/d4af37?text=Madame+Lara'" alt="Madame Lara" class="w-full h-full object-cover rounded-full pointer-events-none">
                         
                         <!-- Tap Overlay Label -->
                         <div class="absolute inset-x-0 bottom-4 text-center pointer-events-none">
@@ -191,7 +161,7 @@
                 </div>
             </section>
 
-            <!-- 2. BOOSTERS SCREEN (TapSwap Math Balanced) -->
+            <!-- 2. BOOSTERS SCREEN (TapSwap Balanced Math) -->
             <section id="screen-boosters" class="screen-panel hidden p-4 space-y-5">
                 <div>
                     <h2 class="text-base font-bold text-[#d4af37]">Your Daily Boosters</h2>
@@ -436,7 +406,7 @@
                 </div>
             </section>
 
-            <!-- 5. PROFILE & BADGES EKRANI -->
+            <!-- 5. PROFILE & BADGES SCREEN -->
             <section id="screen-profile" class="screen-panel hidden p-4 space-y-4">
                 <!-- User Profile Card -->
                 <div class="text-center bg-[#181818] border border-[#2a2a2a] rounded-2xl p-4 gold-glow">
@@ -566,11 +536,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         }
 
-        /* 
-           Exact TapSwap Mathematical Progression Curves:
-           - Multitap: Lv1 (Free, +1/tap), Lv2 (200), Lv3 (500), Lv4 (2,000), Lv5 (4,000), Lv6 (8,000)...
-           - Energy Limit: Lv1 (500 energy), Lv2 (500 cost -> 1000 energy), Lv3 (1,000 cost -> 1500 energy), Lv4 (2,000 cost)...
-        */
+        /* Exact TapSwap Mathematical Progression Curves */
         function getMultitapCost(level) {
             const costs = [0, 200, 500, 2000, 4000, 8000, 16000, 32000, 64000, 128000];
             return costs[level] || (100 * Math.pow(2, level));
@@ -598,7 +564,7 @@
             { id: 'mythic', name: 'Mythic League', minEarned: 10000000, reward: 2500000, badge: '🌌' }
         ];
 
-        /* Badges System Matrix matching exact files in assets/ */
+        /* Badges System Matrix matching exact PNG files in assets/ */
         const BADGES = [
             { id: 'chain', title: 'Chain of Obedience', req: 'Initial Entry' },
             { id: 'whisper', title: 'Whispering Devotee', req: 'Tap 1,000 Times' },
@@ -612,6 +578,7 @@
             { id: 'crown', title: 'Royal Sovereign', req: 'Unlock 5+ Badges' }
         ];
 
+        /* Portal Cards using local assets images */
         const demoCards = [
             { 
                 id: 'card_1', 
@@ -772,17 +739,7 @@
             saveState();
         }
 
-        function createTapParticle(x, y, text) {
-            const p = document.createElement('div');
-            p.className = 'tap-particle';
-            p.innerText = text;
-            p.style.left = `${x - 15}px`;
-            p.style.top = `${y - 30}px`;
-            document.body.appendChild(p);
-
-            setTimeout(() => p.remove(), 750);
-        }
-
+        /* Auto energy recharge & passive income timer loop */
         setInterval(() => {
             if (state.energy < state.maxEnergy) {
                 state.energy = Math.min(state.maxEnergy, state.energy + state.rechargeRate);
@@ -917,15 +874,31 @@
             }
 
             const passiveEl = document.getElementById('passive-rate-display');
-            if (passiveEl) passiveEl.innerText = state.passiveIncomeRate;
+            if (passiveEl) passiveEl.innerText = Math.floor(state.passiveIncomeRate);
 
-            /* League Badge Updates */
+            /* League Badge & Lara Image Updates */
             const curLeague = getCurrentLeague();
             const badgeEl = document.getElementById('user-league-badge');
             if (badgeEl) badgeEl.innerText = curLeague.name;
 
             const iconBox = document.getElementById('league-icon-box');
             if (iconBox) iconBox.innerText = curLeague.badge;
+
+            /* Dynamic Lara Image Switching based on user rank/league */
+            const laraImg = document.getElementById('lara-image');
+            if (laraImg) {
+                let targetSrc = 'assets/lara_50_1.png';
+                if (curLeague.id === 'gold' || curLeague.id === 'platinum') {
+                    targetSrc = 'assets/lara_100_1.png';
+                } else if (['diamond', 'elite', 'legendary', 'mythic'].includes(curLeague.id)) {
+                    targetSrc = 'assets/lara_200_1.png';
+                }
+                
+                // Only update if it's different to prevent constant refreshing
+                if (!laraImg.src.includes(targetSrc)) {
+                    laraImg.src = targetSrc;
+                }
+            }
 
             /* Upgrade UI Dynamic Calculation Labels */
             const multiLvl = document.getElementById('multitap-level-text');
@@ -974,8 +947,8 @@
             if (targetBox) targetBox.classList.add('guru-active');
             showToast("🔥 Taping Guru Active! 5x Power for 20s!");
 
-            if (!state.unlockedBadges.includes('guru_power')) {
-                state.unlockedBadges.push('guru_power');
+            if (!state.unlockedBadges.includes('flame')) {
+                state.unlockedBadges.push('flame');
                 saveState();
                 renderBadgesGrid();
             }
@@ -1031,8 +1004,8 @@
 
         function buyGemsPack(amount, starsCost) {
             tg?.openTelegramLink?.(`https://t.me/madamelara_bot?start=buy_pack_${amount}`);
-            if (!state.unlockedBadges.includes('stars_patron')) {
-                state.unlockedBadges.push('stars_patron');
+            if (!state.unlockedBadges.includes('cat')) {
+                state.unlockedBadges.push('cat');
                 saveState();
                 renderBadgesGrid();
             }
@@ -1103,9 +1076,10 @@
                 const cardEl = document.createElement('div');
                 cardEl.className = 'bg-[#161616] border border-[#2e2e2e] rounded-xl overflow-hidden flex flex-col justify-between';
 
+                // Added ONERROR for portal cards fallback
                 cardEl.innerHTML = `
                     <div class="relative h-36 w-full cursor-pointer" onclick="${isUnlocked ? `openImageModal('${card.img}', '${card.title}')` : ''}">
-                        <img src="${card.img}" class="w-full h-full object-cover ${isUnlocked ? '' : 'blur-md opacity-75'}">
+                        <img src="${card.img}" onerror="this.onerror=null; this.src='https://placehold.co/300x400/1a1a1a/d4af37?text=${encodeURIComponent(card.title)}'" class="w-full h-full object-cover ${isUnlocked ? '' : 'blur-md opacity-75'}">
                         ${!isUnlocked ? `
                             <div class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-center p-2">
                                 <span class="text-xl">🔒</span>
@@ -1165,8 +1139,8 @@
                 }
             } else if (paymentMethod === 'STARS') {
                 tg?.openTelegramLink?.(`https://t.me/madamelara_bot?start=unlock_content_${cardId}`);
-                if (!state.unlockedBadges.includes('stars_patron')) {
-                    state.unlockedBadges.push('stars_patron');
+                if (!state.unlockedBadges.includes('cat')) {
+                    state.unlockedBadges.push('cat');
                     saveState();
                     renderBadgesGrid();
                 }
@@ -1215,6 +1189,7 @@
             renderBadgesGrid();
         }
 
+        /* Render badges grid mapping directly to assets/badge_{id}_active.png and badge_{id}_locked.png */
         function renderBadgesGrid() {
             const container = document.getElementById('badges-grid-container');
             const countText = document.getElementById('unlocked-badges-count');
@@ -1233,12 +1208,13 @@
                 }`;
 
                 item.onclick = () => {
-                    showToast(`🎖️ ${b.title}\nStatus: ${isUnlocked ? 'UNLOCKED ✅' : 'LOCKED 🔒'}\nReq: ${b.req}`);
+                    showToast(`🎖️ ${b.title}\nStatus: ${isUnlocked ? 'UNLOCKED ✅' : 'LOCKED 🔒'}\nRequirement: ${b.req}`);
                 };
 
                 const badgeState = isUnlocked ? 'active' : 'locked';
                 const badgeImgPath = `assets/badge_${b.id}_${badgeState}.png`;
 
+                // ONERROR fallback for Gemini Preview (uses placeholder if local assets are unavailable)
                 item.innerHTML = `
                     <div class="w-12 h-12 my-1 flex items-center justify-center">
                         <img src="${badgeImgPath}" alt="${b.title}" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1a1a1a/d4af37?text=🎖️'" class="w-full h-full object-contain">
