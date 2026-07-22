@@ -15,7 +15,10 @@ const telegramUsername = tg?.initDataUnsafe?.user?.username || "Slave";
 // ==========================================================================
 const supabaseUrl = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
 const supabaseKey = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+let supabaseClient = null;
+if (typeof supabase !== 'undefined' && supabase.createClient) {
+    supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+}
 
 // ==========================================================================
 // 3. CORE GAME CONFIGURATION & STATES
@@ -90,6 +93,10 @@ const closeImageModalBtn = document.getElementById('close-image-modal');
 // 5. SUPABASE CLOUD FILE & INVENTORY SYNC
 // ==========================================================================
 async function loadUserData() {
+    if (!supabaseClient) {
+        updateHeaderStats();
+        return;
+    }
     try {
         const { data, error } = await supabaseClient
             .from('slaves')
@@ -137,6 +144,10 @@ async function loadUserData() {
 }
 
 async function saveCoinsToDatabase() {
+    if (!supabaseClient) {
+        showScreen(lobbyScreen);
+        return;
+    }
     try {
         if (claimBtn) { claimBtn.innerText = "Saving Data..."; claimBtn.disabled = true; }
 
@@ -154,7 +165,7 @@ async function saveCoinsToDatabase() {
 }
 
 async function saveEnergyToDatabase() {
-    if (!telegramUserId) return;
+    if (!telegramUserId || !supabaseClient) return;
     try {
         await supabaseClient
             .from('slaves')
@@ -173,6 +184,10 @@ let currentSelectedCreator = { id: null, name: '' };
 async function loadCreators() {
     const creatorsGrid = document.getElementById('creators-grid');
     if (!creatorsGrid) return;
+    if (!supabaseClient) {
+        creatorsGrid.innerHTML = '<p style="color:#aaa; text-align:center;">Database offline.</p>';
+        return;
+    }
 
     try {
         const { data: creators, error } = await supabaseClient.from('creators').select('*');
@@ -207,7 +222,7 @@ async function loadCreators() {
 async function loadCreatorGallery(creatorId, creatorName) {
     currentSelectedCreator = { id: creatorId, name: creatorName };
     const galleryContainer = document.getElementById('gallery-container');
-    if (!galleryContainer) return;
+    if (!galleryContainer || !supabaseClient) return;
 
     try {
         const { data: contents, error } = await supabaseClient
@@ -266,11 +281,13 @@ async function unlockContent(contentId, cost, unlockType) {
             totalCoins -= cost;
             updateHeaderStats();
 
-            await supabaseClient.from('purchases').insert({
-                user_id: telegramUserId,
-                content_id: contentId,
-                payment_type: 'POINTS'
-            });
+            if (supabaseClient) {
+                await supabaseClient.from('purchases').insert({
+                    user_id: telegramUserId,
+                    content_id: contentId,
+                    payment_type: 'POINTS'
+                });
+            }
 
             await saveCoinsToDatabase();
             alert("Unlocked Successfully!");
@@ -280,7 +297,12 @@ async function unlockContent(contentId, cost, unlockType) {
             }
         }
     } else if (unlockType === 'STARS') {
-        tg.openTelegramLink(`https://t.me/madamelara_bot?start=buy_content_${contentId}`);
+        const deepLink = `https://t.me/madamelara_bot?start=unlock_content_${contentId}`;
+        if (tg && tg.openTelegramLink) {
+            tg.openTelegramLink(deepLink);
+        } else {
+            window.open(deepLink, '_blank');
+        }
     }
 }
 
@@ -336,7 +358,7 @@ if (backFromMarket) backFromMarket.addEventListener('click', () => showScreen(lo
 if (backFromProfile) backFromProfile.addEventListener('click', () => showScreen(lobbyScreen));
 
 // ==========================================================================
-// 8. TIME-BASED ENERGY REGENERATION (4 HOURS LOGIC)
+// 8. TIME-BASED ENERGY REGENERATION
 // ==========================================================================
 function triggerEnergyWaitState() {
     if (energyModal) energyModal.classList.remove('hidden');
@@ -491,13 +513,23 @@ if (closeEnergyModalBtn) {
 // ==========================================================================
 if (buyEnergy5Btn) {
     buyEnergy5Btn.addEventListener('click', () => {
-        tg.openTelegramLink("https://t.me/madamelara_bot?start=buy_energy_5");
+        const deepLink = "https://t.me/madamelara_bot?start=buy_energy_5";
+        if (tg && tg.openTelegramLink) {
+            tg.openTelegramLink(deepLink);
+        } else {
+            window.open(deepLink, "_blank");
+        }
     });
 }
 
 if (buyEnergy10Btn) {
     buyEnergy10Btn.addEventListener('click', () => {
-        tg.openTelegramLink("https://t.me/madamelara_bot?start=buy_energy_10");
+        const deepLink = "https://t.me/madamelara_bot?start=buy_energy_10";
+        if (tg && tg.openTelegramLink) {
+            tg.openTelegramLink(deepLink);
+        } else {
+            window.open(deepLink, "_blank");
+        }
     });
 }
 
