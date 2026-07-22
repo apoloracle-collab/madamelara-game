@@ -407,11 +407,11 @@
                 </div>
                 <h3 class="text-base font-bold text-white" id="stars-modal-title">Telegram Stars Payment</h3>
                 <p class="text-xs text-gray-300 leading-relaxed" id="stars-modal-desc">
-                    Clicking below will open bot chat. Please press <strong>Send</strong> on the incoming command to receive your Stars invoice instantly!
+                    Clicking below will instantly open the bot chat to generate your secure Star invoice.
                 </p>
                 <div class="flex flex-col space-y-2 pt-2">
                     <button id="stars-modal-confirm-btn" onclick="confirmStarsRedirect()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold text-xs py-3 rounded-xl shadow hover:opacity-90 transition flex items-center justify-center space-x-2">
-                        <span>⚡ Open Bot & Send</span>
+                        <span>⚡ Pay with Stars</span>
                     </button>
                     <button onclick="closeStarsModal()" class="w-full bg-[#252525] text-gray-400 text-xs py-2.5 rounded-xl hover:text-white transition">
                         Close
@@ -853,15 +853,12 @@
             closeStarsModal();
             if (pendingStarsCommand) {
                 const botUsername = "madamelara_bot";
-                // Telegram mini app native openInvoice or direct telegram bot interaction support
-                const directUrl = `https://t.me/${botUsername}?start=${pendingStarsCommand}`;
+                const deepLinkUrl = `https://t.me/${botUsername}?start=${pendingStarsCommand}`;
                 
                 if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(directUrl);
-                } else if (tg && tg.openLink) {
-                    tg.openLink(directUrl, { try_instant_view: false });
+                    tg.openTelegramLink(deepLinkUrl);
                 } else {
-                    window.location.href = directUrl;
+                    window.open(deepLinkUrl, '_blank');
                 }
             }
         }
