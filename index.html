@@ -437,7 +437,7 @@
 
         const telegramUsername = tg?.initDataUnsafe?.user?.username || "Devotee";
 
-        const currentUserId = tg?.initDataUnsafe?.user?.id || "guest";
+        const currentUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "guest_user";
         const STORAGE_KEY = `madame_lara_game_state_v3_${currentUserId}`;
 
         const defaultState = {
@@ -485,9 +485,6 @@
 
         let state = loadState();
 
-        // Process Telegram start_param deep links
-        const currentUserId = tg?.initDataUnsafe?.user?.id || "12345";
-        
         // Dynamically set referral link for this user
         window.addEventListener('DOMContentLoaded', () => {
             const refInput = document.getElementById('ref-link-input');
