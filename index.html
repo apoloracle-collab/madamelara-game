@@ -172,7 +172,7 @@
                                 <span id="guru-count" class="text-xs font-mono bg-amber-950 text-amber-400 px-2 py-0.5 rounded border border-amber-800">3/3</span>
                             </div>
                             <div class="mt-3">
-                                <div class="font-bold text-xs text-white">Taping Guru</div>
+                                <div class="font-bold text-xs text-white">Tapping Guru</div>
                                 <div class="text-[10px] text-gray-400 mt-0.5">5x Power for 20s</div>
                             </div>
                         </div>
@@ -432,7 +432,6 @@
         }
 
         const telegramUsername = tg?.initDataUnsafe?.user?.username || "Devotee";
-
         const currentUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "guest_user";
         const STORAGE_KEY = `madame_lara_game_state_v3_${currentUserId}`;
 
@@ -464,26 +463,58 @@
             passiveIncomeRate: 0,
             totalTouches: 0,
             unlockedContents: [],
+            unlockedBadges: [],
             claimedRef: false,
             claimedChannelTask: false,
-            claimedXTask: false
+            claimedXTask: false,
+            lastActiveTimestamp: Date.now()
         };
+
+        function processOfflineRegeneration(loadedState) {
+            const now = Date.now();
+            const lastActive = loadedState.lastActiveTimestamp || now;
+            const elapsedSec = Math.max(0, Math.floor((now - lastActive) / 1000));
+
+            if (elapsedSec > 0) {
+                // Recover offline energy
+                if (loadedState.energy < loadedState.maxEnergy) {
+                    const energyAdded = elapsedSec * (loadedState.rechargeRate || 1);
+                    loadedState.energy = Math.min(loadedState.maxEnergy, loadedState.energy + energyAdded);
+                }
+
+                // Add offline passive income
+                if (loadedState.passiveIncomeRate > 0) {
+                    const passiveGained = Math.floor((loadedState.passiveIncomeRate / 3600) * elapsedSec);
+                    if (passiveGained > 0) {
+                        loadedState.diamonds += passiveGained;
+                        setTimeout(() => {
+                            showToast(`Offline Income Claimed: +${passiveGained.toLocaleString('en-US')} 💎!`);
+                        }, 1200);
+                    }
+                }
+            }
+
+            loadedState.lastActiveTimestamp = now;
+            return loadedState;
+        }
 
         function loadState() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    return { ...defaultState, ...parsed };
+                    const merged = { ...defaultState, ...parsed };
+                    return processOfflineRegeneration(merged);
                 }
             } catch (e) {
                 console.error("Failed to load state", e);
             }
-            return { ...defaultState };
+            return { ...defaultState, lastActiveTimestamp: Date.now() };
         }
 
         let cloudSaveTimer = null;
         function saveState() {
+            state.lastActiveTimestamp = Date.now();
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {
@@ -514,9 +545,15 @@
                     if (Array.isArray(data.unlocked_contents)) state.unlockedContents = data.unlocked_contents;
                     if (Array.isArray(data.unlocked_badges)) state.unlockedBadges = data.unlocked_badges;
                     
+                    // Process offline recovery with cloud timestamps
+                    processOfflineRegeneration(state);
+                    
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                     if (typeof updateUI === 'function') updateUI();
                     console.log("✅ Game progress loaded from Supabase Cloud database!");
+                } else if (error && error.code === 'PGRST116') {
+                    // Entry does not exist yet; cloud sync will upsert it
+                    syncToCloud();
                 }
             } catch (e) {
                 console.warn("Cloud sync load warning:", e);
@@ -529,9 +566,9 @@
                 await supabaseClient.from('slaves').upsert({
                     telegram_id: parseInt(currentUserId),
                     username: telegramUsername,
-                    diamonds: state.diamonds,
-                    total_points: state.diamonds,
-                    energy: state.energy,
+                    diamonds: Math.floor(state.diamonds),
+                    total_points: Math.floor(state.diamonds),
+                    energy: Math.floor(state.energy),
                     max_energy: state.maxEnergy,
                     multitap_level: state.multitapLevel,
                     energy_level: state.energyLevel,
@@ -548,6 +585,20 @@
 
         let state = loadState();
         syncFromCloud();
+
+        // Save active state timestamp on tab focus change or page unload
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                saveState();
+            } else {
+                state = processOfflineRegeneration(state);
+                updateUI();
+            }
+        });
+
+        window.addEventListener('beforeunload', () => {
+            saveState();
+        });
 
         window.addEventListener('DOMContentLoaded', () => {
             const refInput = document.getElementById('ref-link-input');
@@ -896,7 +947,7 @@
 
         function useDailyGuru() {
             if (state.dailyGuruCount <= 0) {
-                showToast("All Taping Guru boosts used for today!");
+                showToast("All Tapping Guru boosts used for today!");
                 return;
             }
             if (state.isGuruActive) return;
@@ -907,12 +958,12 @@
             
             const targetBox = document.getElementById('lara-target-box');
             if (targetBox) targetBox.classList.add('guru-active');
-            showToast("🔥 Taping Guru Active! 5x Power for 20s!");
+            showToast("🔥 Tapping Guru Active! 5x Power for 20s!");
 
             setTimeout(() => {
                 state.isGuruActive = false;
                 if (targetBox) targetBox.classList.remove('guru-active');
-                showToast("Taping Guru expired.");
+                showToast("Tapping Guru expired.");
             }, 20000);
         }
 
