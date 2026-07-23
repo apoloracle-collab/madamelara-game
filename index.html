@@ -525,6 +525,38 @@
             cloudSaveTimer = setTimeout(syncToCloud, 3000);
         }
 
+        // IMMEDIATE CLOUD SAVE ON APP EXIT
+        function syncToCloudImmediate() {
+            if (!supabaseClient || currentUserId === "guest_user") return;
+            state.lastActiveTimestamp = Date.now();
+            
+            // Persist to local storage immediately
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {}
+
+            const payload = {
+                telegram_id: parseInt(currentUserId),
+                username: telegramUsername,
+                diamonds: Math.floor(state.diamonds),
+                total_points: Math.floor(state.diamonds),
+                energy: Math.floor(state.energy),
+                max_energy: state.maxEnergy,
+                multitap_level: state.multitapLevel,
+                energy_level: state.energyLevel,
+                recharge_level: state.rechargeLevel,
+                has_autobot: state.hasAutoBot,
+                unlocked_contents: state.unlockedContents,
+                unlocked_badges: state.unlockedBadges
+            };
+
+            try {
+                supabaseClient.from('slaves').upsert(payload, { onConflict: 'telegram_id' });
+            } catch (e) {
+                console.warn("Immediate cloud sync failed:", e);
+            }
+        }
+
         async function syncFromCloud() {
             if (!supabaseClient || currentUserId === "guest_user") return;
             try {
@@ -535,25 +567,32 @@
                     .single();
 
                 if (data && !error) {
-                    state.diamonds = data.diamonds ?? data.total_points ?? state.diamonds;
+                    const cloudDiamonds = data.diamonds ?? data.total_points ?? 0;
+                    
+                    // SMART CLOUD-FIRST MERGE: Keep the highest balance and touch count
+                    state.diamonds = Math.max(state.diamonds, cloudDiamonds);
                     state.energy = data.energy ?? state.energy;
                     state.maxEnergy = data.max_energy ?? state.maxEnergy;
-                    state.multitapLevel = data.multitap_level ?? state.multitapLevel;
-                    state.energyLevel = data.energy_level ?? state.energyLevel;
-                    state.rechargeLevel = data.recharge_level ?? state.rechargeLevel;
+                    state.multitapLevel = Math.max(state.multitapLevel, data.multitap_level ?? 1);
+                    state.energyLevel = Math.max(state.energyLevel, data.energy_level ?? 1);
+                    state.rechargeLevel = Math.max(state.rechargeLevel, data.recharge_level ?? 1);
                     state.hasAutoBot = data.has_autobot ?? state.hasAutoBot;
-                    if (Array.isArray(data.unlocked_contents)) state.unlockedContents = data.unlocked_contents;
-                    if (Array.isArray(data.unlocked_badges)) state.unlockedBadges = data.unlocked_badges;
                     
-                    // Process offline recovery with cloud timestamps
+                    if (Array.isArray(data.unlocked_contents)) {
+                        state.unlockedContents = Array.from(new Set([...state.unlockedContents, ...data.unlocked_contents]));
+                    }
+                    if (Array.isArray(data.unlocked_badges)) {
+                        state.unlockedBadges = Array.from(new Set([...state.unlockedBadges, ...data.unlocked_badges]));
+                    }
+                    
+                    // Process offline recovery
                     processOfflineRegeneration(state);
                     
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                     if (typeof updateUI === 'function') updateUI();
-                    console.log("✅ Game progress loaded from Supabase Cloud database!");
+                    console.log("✅ Game progress synchronized with Cloud!");
                 } else if (error && error.code === 'PGRST116') {
-                    // Entry does not exist yet; cloud sync will upsert it
-                    syncToCloud();
+                    syncToCloudImmediate();
                 }
             } catch (e) {
                 console.warn("Cloud sync load warning:", e);
@@ -586,10 +625,9 @@
         let state = loadState();
         syncFromCloud();
 
-        // Save active state timestamp on tab focus change or page unload
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                saveState();
+                syncToCloudImmediate();
             } else {
                 state = processOfflineRegeneration(state);
                 updateUI();
@@ -597,7 +635,11 @@
         });
 
         window.addEventListener('beforeunload', () => {
-            saveState();
+            syncToCloudImmediate();
+        });
+
+        window.addEventListener('pagehide', () => {
+            syncToCloudImmediate();
         });
 
         window.addEventListener('DOMContentLoaded', () => {
