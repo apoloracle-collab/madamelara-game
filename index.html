@@ -472,7 +472,7 @@
         localStorage.setItem('cached_tg_user_id', currentUserId);
         localStorage.setItem('cached_tg_username', telegramUsername);
 
-        const STORAGE_KEY = `madame_lara_game_state_v9_${currentUserId}`;
+        const STORAGE_KEY = `madame_lara_game_state_v10_${currentUserId}`;
 
         const SUPABASE_URL = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
@@ -524,11 +524,13 @@
             }
 
             if (elapsedSec > 0) {
+                // Offline Energy regeneration
                 if (loadedState.energy < loadedState.maxEnergy) {
                     const energyAdded = elapsedSec * (loadedState.rechargeRate || 1);
                     loadedState.energy = Math.min(loadedState.maxEnergy, loadedState.energy + energyAdded);
                 }
 
+                // Offline Passive Income accrual
                 if (loadedState.passiveIncomeRate > 0) {
                     const passiveGained = Math.floor((loadedState.passiveIncomeRate / 3600) * elapsedSec);
                     if (passiveGained > 0) {
@@ -563,18 +565,20 @@
         async function syncToCloud() {
             if (!supabaseClient || isSyncing) return;
             isSyncing = true;
-            state.lastActiveTimestamp = Date.now();
+            const nowTime = Date.now();
+            state.lastActiveTimestamp = nowTime;
 
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {}
 
-            // Encode daily boost state into unlockedBadges array to persist across devices without DB schema changes
+            // Encode daily boost state AND timestamp into unlockedBadges array to persist across devices
             const todayStr = getTodayDateString();
             const cleanBadges = state.unlockedBadges.filter(b => !b.startsWith('__boost_'));
             cleanBadges.push(`__boost_tank_${state.dailyTankCount}`);
             cleanBadges.push(`__boost_guru_${state.dailyGuruCount}`);
             cleanBadges.push(`__boost_date_${todayStr}`);
+            cleanBadges.push(`__boost_time_${nowTime}`);
 
             const payload = {
                 telegram_id: parseInt(currentUserId),
@@ -614,15 +618,15 @@
                     .maybeSingle();
 
                 if (data && !error) {
-                    // Supabase cloud data is the absolute source of truth
+                    // Supabase cloud data is absolute source of truth
                     const cloudDiamonds = data.diamonds ?? data.total_points ?? 0;
-                    
                     state.diamonds = cloudDiamonds;
-                    state.energy = Math.min(data.energy ?? state.energy, data.max_energy ?? 500);
+                    
                     state.maxEnergy = data.max_energy ?? 500;
                     state.multitapLevel = data.multitap_level ?? 1;
                     state.energyLevel = data.energy_level ?? 1;
                     state.rechargeLevel = data.recharge_level ?? 1;
+                    state.rechargeRate = state.rechargeLevel; // Calculate recharge rate from level
                     state.totalTouches = data.extra_time ?? 0;
                     state.hasAutoBot = data.has_autobot ?? state.hasAutoBot;
 
@@ -630,7 +634,8 @@
                         state.unlockedContents = data.unlocked_contents;
                     }
 
-                    // Decode daily boosts & badges from cloud
+                    // Decode daily boosts, badges, and cloud timestamp
+                    let cloudSavedTime = Date.now();
                     if (Array.isArray(data.unlocked_badges)) {
                         const todayStr = getTodayDateString();
                         let cloudDate = todayStr;
@@ -645,6 +650,8 @@
                                 cloudGuru = parseInt(badge.replace('__boost_guru_', ''));
                             } else if (badge.startsWith('__boost_date_')) {
                                 cloudDate = badge.replace('__boost_date_', '');
+                            } else if (badge.startsWith('__boost_time_')) {
+                                cloudSavedTime = parseInt(badge.replace('__boost_time_', ''));
                             } else {
                                 userBadgesOnly.push(badge);
                             }
@@ -663,11 +670,31 @@
                         }
                     }
 
+                    // Calculate offline energy recovery between saved cloud timestamp and current time
+                    const baseEnergy = data.energy ?? 500;
+                    const now = Date.now();
+                    const elapsedSec = Math.max(0, Math.floor((now - cloudSavedTime) / 1000));
+                    const energyAdded = elapsedSec * (state.rechargeRate || 1);
+                    state.energy = Math.min(state.maxEnergy, baseEnergy + energyAdded);
+
+                    // Recalculate bonuses from unlocked cards
                     recalculateCardBonuses();
-                    processOfflineRegeneration(state);
+
+                    // Calculate offline passive income from cloud time gap
+                    if (state.passiveIncomeRate > 0 && elapsedSec > 0) {
+                        const passiveGained = Math.floor((state.passiveIncomeRate / 3600) * elapsedSec);
+                        if (passiveGained > 0) {
+                            state.diamonds += passiveGained;
+                            setTimeout(() => {
+                                showToast(`Offline Income: +${passiveGained.toLocaleString('en-US')} 💎!`);
+                            }, 1200);
+                        }
+                    }
+
+                    state.lastActiveTimestamp = now;
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                     updateUI();
-                    console.log("✅ Successfully fetched latest state from Supabase on load!");
+                    console.log("✅ Fetched state from Supabase on load! Energy restored:", state.energy);
                 } else {
                     await syncToCloud();
                 }
@@ -892,7 +919,7 @@
 
         setInterval(() => {
             if (state.energy < state.maxEnergy) {
-                state.energy = Math.min(state.maxEnergy, state.energy + state.rechargeRate);
+                state.energy = Math.min(state.maxEnergy, state.energy + (state.rechargeRate || 1));
             }
             if (state.passiveIncomeRate > 0) {
                 state.diamonds += (state.passiveIncomeRate / 3600);
