@@ -43,7 +43,7 @@ def get_or_create_slave(telegram_id: int, username: str = "Devotee") -> dict:
         if response.data and len(response.data) > 0:
             return response.data[0]
         
-        # New player template matching new game attributes
+        # New player template matching game attributes
         new_slave = {
             "telegram_id": telegram_id,
             "username": username if username else "Devotee",
@@ -81,6 +81,9 @@ def add_diamonds(telegram_id: int, amount: int) -> bool:
         return True
 
     try:
+        # Guarantee user existence first
+        get_or_create_slave(telegram_id)
+
         response = supabase.table("slaves").select("diamonds", "total_points").eq("telegram_id", telegram_id).execute()
         
         if response.data and len(response.data) > 0:
@@ -96,13 +99,7 @@ def add_diamonds(telegram_id: int, amount: int) -> bool:
             }).eq("telegram_id", telegram_id).execute()
             print(f"✅ Success: Added {amount} diamonds to {telegram_id}. New Balance: {new_diamonds}")
             return True
-        else:
-            get_or_create_slave(telegram_id)
-            supabase.table("slaves").update({
-                "diamonds": amount,
-                "total_points": amount
-            }).eq("telegram_id", telegram_id).execute()
-            return True
+        return False
 
     except Exception as e:
         print(f"Database error in add_diamonds: {e}")
@@ -117,6 +114,9 @@ def add_energy(telegram_id: int, amount: int) -> bool:
         return True
 
     try:
+        # Guarantee user existence first
+        get_or_create_slave(telegram_id)
+
         response = supabase.table("slaves").select("energy", "max_energy").eq("telegram_id", telegram_id).execute()
         
         if response.data and len(response.data) > 0:
@@ -145,6 +145,7 @@ def activate_autobot(telegram_id: int) -> bool:
         return True
 
     try:
+        get_or_create_slave(telegram_id)
         supabase.table("slaves").update({"has_autobot": True}).eq("telegram_id", telegram_id).execute()
         print(f"✅ AutoBot activated for {telegram_id}")
         return True
@@ -160,6 +161,9 @@ def unlock_content(telegram_id: int, content_id: str, cost: int = 0, payment_typ
         return {"success": True, "message": "Unlocked locally!"}
 
     try:
+        # Guarantee user exists in database
+        get_or_create_slave(telegram_id)
+
         user_res = supabase.table("slaves").select("diamonds", "total_points", "unlocked_contents").eq("telegram_id", telegram_id).execute()
         if not user_res.data:
             return {"success": False, "message": "User not found!"}
@@ -172,7 +176,7 @@ def unlock_content(telegram_id: int, content_id: str, cost: int = 0, payment_typ
 
         current_diamonds = user_data.get("diamonds", 0) or user_data.get("total_points", 0) or 0
 
-        if payment_type == "POINTS":
+        if payment_type == "POINTS" and cost > 0:
             if current_diamonds < cost:
                 return {"success": False, "message": "Insufficient Diamonds balance!"}
             
@@ -202,6 +206,7 @@ def unlock_badge(telegram_id: int, badge_id: str) -> bool:
         return True
 
     try:
+        get_or_create_slave(telegram_id)
         response = supabase.table("slaves").select("unlocked_badges").eq("telegram_id", telegram_id).execute()
         if response.data:
             badges = response.data[0].get("unlocked_badges", []) or []
