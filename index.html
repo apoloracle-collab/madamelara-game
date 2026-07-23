@@ -614,19 +614,20 @@
                     .maybeSingle();
 
                 if (data && !error) {
+                    // Supabase cloud data is the absolute source of truth
                     const cloudDiamonds = data.diamonds ?? data.total_points ?? 0;
                     
-                    state.diamonds = Math.max(state.diamonds, cloudDiamonds);
-                    state.energy = Math.max(state.energy, data.energy ?? state.energy);
-                    state.maxEnergy = Math.max(state.maxEnergy, data.max_energy ?? 500);
-                    state.multitapLevel = Math.max(state.multitapLevel, data.multitap_level ?? 1);
-                    state.energyLevel = Math.max(state.energyLevel, data.energy_level ?? 1);
-                    state.rechargeLevel = Math.max(state.rechargeLevel, data.recharge_level ?? 1);
-                    state.totalTouches = Math.max(state.totalTouches, data.extra_time ?? 0);
+                    state.diamonds = cloudDiamonds;
+                    state.energy = Math.min(data.energy ?? state.energy, data.max_energy ?? 500);
+                    state.maxEnergy = data.max_energy ?? 500;
+                    state.multitapLevel = data.multitap_level ?? 1;
+                    state.energyLevel = data.energy_level ?? 1;
+                    state.rechargeLevel = data.recharge_level ?? 1;
+                    state.totalTouches = data.extra_time ?? 0;
                     state.hasAutoBot = data.has_autobot ?? state.hasAutoBot;
 
                     if (Array.isArray(data.unlocked_contents)) {
-                        state.unlockedContents = Array.from(new Set([...state.unlockedContents, ...data.unlocked_contents]));
+                        state.unlockedContents = data.unlocked_contents;
                     }
 
                     // Decode daily boosts & badges from cloud
@@ -649,7 +650,7 @@
                             }
                         });
 
-                        state.unlockedBadges = Array.from(new Set([...state.unlockedBadges.filter(b => !b.startsWith('__boost_')), ...userBadgesOnly]));
+                        state.unlockedBadges = userBadgesOnly;
 
                         if (cloudDate === todayStr) {
                             state.dailyTankCount = cloudTank;
