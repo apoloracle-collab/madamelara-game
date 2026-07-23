@@ -568,11 +568,12 @@
 
                 if (data && !error) {
                     const cloudDiamonds = data.diamonds ?? data.total_points ?? 0;
+                    const cloudEnergy = data.energy ?? 0;
                     
-                    // SMART CLOUD-FIRST MERGE: Keep the highest balance and touch count
+                    // SMART CLOUD-FIRST MERGE: Keep highest recorded values
                     state.diamonds = Math.max(state.diamonds, cloudDiamonds);
-                    state.energy = data.energy ?? state.energy;
-                    state.maxEnergy = data.max_energy ?? state.maxEnergy;
+                    state.energy = Math.max(state.energy, cloudEnergy);
+                    state.maxEnergy = Math.max(state.maxEnergy, data.max_energy ?? 500);
                     state.multitapLevel = Math.max(state.multitapLevel, data.multitap_level ?? 1);
                     state.energyLevel = Math.max(state.energyLevel, data.energy_level ?? 1);
                     state.rechargeLevel = Math.max(state.rechargeLevel, data.recharge_level ?? 1);
