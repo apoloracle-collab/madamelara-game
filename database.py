@@ -55,7 +55,7 @@ def get_or_create_slave(telegram_id: int, username: str = "Devotee") -> dict:
             "multitap_level": 1,
             "energy_level": 1,
             "recharge_level": 1,
-            "passive_rate": 0,
+            "passive_income_rate": 0,
             "has_autobot": False,
             "unlocked_contents": [],
             "unlocked_badges": []
