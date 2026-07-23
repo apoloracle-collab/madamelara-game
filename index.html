@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;600;700;800&family=Azeret+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         * {
@@ -441,6 +442,18 @@
         const currentUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "guest_user";
         const STORAGE_KEY = `madame_lara_game_state_v3_${currentUserId}`;
 
+        // Supabase Cloud Initialization
+        const SUPABASE_URL = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
+        let supabaseClient = null;
+        if (window.supabase && window.supabase.createClient) {
+            try {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            } catch (err) {
+                console.warn("Supabase client init error:", err);
+            }
+        }
+
         const defaultState = {
             diamonds: 0,
             energy: 500,
@@ -476,15 +489,73 @@
             return { ...defaultState };
         }
 
+        let cloudSaveTimer = null;
         function saveState() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {
-                console.error("Failed to save state", e);
+                console.error("Failed to save local state", e);
+            }
+            
+            // Debounced Cloud Sync to Supabase
+            if (cloudSaveTimer) clearTimeout(cloudSaveTimer);
+            cloudSaveTimer = setTimeout(syncToCloud, 3000);
+        }
+
+        async function syncFromCloud() {
+            if (!supabaseClient || currentUserId === "guest_user") return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('slaves')
+                    .select('*')
+                    .eq('telegram_id', parseInt(currentUserId))
+                    .single();
+
+                if (data && !error) {
+                    state.diamonds = data.diamonds ?? data.total_points ?? state.diamonds;
+                    state.energy = data.energy ?? state.energy;
+                    state.maxEnergy = data.max_energy ?? state.maxEnergy;
+                    state.multitapLevel = data.multitap_level ?? state.multitapLevel;
+                    state.energyLevel = data.energy_level ?? state.energyLevel;
+                    state.rechargeLevel = data.recharge_level ?? state.rechargeLevel;
+                    state.hasAutoBot = data.has_autobot ?? state.hasAutoBot;
+                    if (Array.isArray(data.unlocked_contents)) state.unlockedContents = data.unlocked_contents;
+                    if (Array.isArray(data.unlocked_badges)) state.unlockedBadges = data.unlocked_badges;
+                    
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+                    if (typeof updateUI === 'function') updateUI();
+                    console.log("✅ Game progress loaded from Supabase Cloud database!");
+                }
+            } catch (e) {
+                console.warn("Cloud sync load warning:", e);
+            }
+        }
+
+        async function syncToCloud() {
+            if (!supabaseClient || currentUserId === "guest_user") return;
+            try {
+                await supabaseClient.from('slaves').upsert({
+                    telegram_id: parseInt(currentUserId),
+                    username: telegramUsername,
+                    diamonds: state.diamonds,
+                    total_points: state.diamonds,
+                    energy: state.energy,
+                    max_energy: state.maxEnergy,
+                    multitap_level: state.multitapLevel,
+                    energy_level: state.energyLevel,
+                    recharge_level: state.rechargeLevel,
+                    has_autobot: state.hasAutoBot,
+                    unlocked_contents: state.unlockedContents,
+                    unlocked_badges: state.unlockedBadges
+                }, { onConflict: 'telegram_id' });
+                console.log("☁️ Game progress saved to Supabase Cloud database!");
+            } catch (e) {
+                console.warn("Cloud save warning:", e);
             }
         }
 
         let state = loadState();
+        syncFromCloud();
 
         // Dynamically set referral link for this user
         window.addEventListener('DOMContentLoaded', () => {
