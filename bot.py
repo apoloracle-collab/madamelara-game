@@ -232,16 +232,12 @@ def send_welcome(message):
                         print(f"Could not send message to referrer: {e}")
 
             markup = types.InlineKeyboardMarkup()
-            full_app_url = VERCEL_WEB_APP_URL
-            web_app_info = types.WebAppInfo(url=full_app_url)
-            btn_enter = types.InlineKeyboardButton("👑 Play / Open Portal", web_app=web_app_info)
             btn_join = types.InlineKeyboardButton("📢 Join Channel", url="https://t.me/+XrzPL2PXnYxkNjk0")
-            markup.row(btn_enter)
             markup.row(btn_join)
 
             bot.send_message(
                 message.chat.id,
-                "🎉 **Welcome!** You joined via a friend's referral link! Tap 'Play Open Portal' below to start playing!",
+                "🎉 **Welcome!** You joined via a friend's referral link! Tap the **Play** button at the bottom of the screen to start playing!",
                 parse_mode="Markdown",
                 reply_markup=markup
             )
@@ -268,7 +264,7 @@ def send_welcome(message):
                         "Please join the channel below, then try again!",
                         parse_mode="Markdown",
                         reply_markup=types.InlineKeyboardMarkup().add(
-                            types.InlineKeyboardButton("📢 Join Channel", url="https://t.me/laragameportal"),
+                            types.InlineKeyboardButton("📢 Join Channel", url="https://t.me/+XrzPL2PXnYxkNjk0"),
                             types.InlineKeyboardButton("🔄 Verify Again", url="https://t.me/madamelara_bot?start=check_telegram_channel")
                         )
                     )
@@ -291,17 +287,11 @@ def send_welcome(message):
         "• **Tap & Mine:** Collect diamonds with every touch and upgrade your power.\n"
         "• **Auto Bot:** Automate your earnings while away.\n"
         "• **Secret Gallery:** Access exclusive, private media cards.\n\n"
-        "Click the button below to enter Madame Lara's realm!"
+        "👇 Tap the **Play** button at the bottom of your screen to open the app!"
     )
     
     markup = types.InlineKeyboardMarkup()
-    full_app_url = VERCEL_WEB_APP_URL
-    
-    web_app_info = types.WebAppInfo(url=full_app_url)
-    btn_enter = types.InlineKeyboardButton("👑 Play / Open Portal", web_app=web_app_info)
     btn_join = types.InlineKeyboardButton("📢 Join Channel", url="https://t.me/+XrzPL2PXnYxkNjk0")
-    
-    markup.row(btn_enter)
     markup.row(btn_join)
     
     bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
