@@ -341,6 +341,7 @@
                     </div>
                     <h2 id="profile-username-text" class="font-bold text-base mt-2.5 text-white">@Devotee</h2>
                     <p id="profile-rank-text" class="text-xs text-yellow-500 font-mono mt-0.5">Bronze Supporter</p>
+                    <div id="profile-tg-id" class="text-[11px] text-[#d4af37] font-mono mt-1">ID: Loading...</div>
 
                     <div class="grid grid-cols-2 gap-2.5 mt-4 text-left text-xs bg-[#111] p-3 rounded-xl border border-[#222]">
                         <div>
@@ -432,8 +433,27 @@
         }
 
         const telegramUsername = tg?.initDataUnsafe?.user?.username || "Devotee";
-        const currentUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "guest_user";
-        const STORAGE_KEY = `madame_lara_game_state_v3_${currentUserId}`;
+
+        // ROBUST USER ID RESOLUTION Across Platforms (Mobile, Web, Desktop)
+        function getResolvedUserId() {
+            if (tg?.initDataUnsafe?.user?.id) {
+                const idStr = String(tg.initDataUnsafe.user.id);
+                localStorage.setItem('cached_tg_user_id', idStr);
+                return idStr;
+            }
+            const cached = localStorage.getItem('cached_tg_user_id');
+            if (cached) return cached;
+            
+            let guestId = localStorage.getItem('guest_fallback_id');
+            if (!guestId) {
+                guestId = String(Math.floor(100000000 + Math.random() * 900000000));
+                localStorage.setItem('guest_fallback_id', guestId);
+            }
+            return guestId;
+        }
+
+        const currentUserId = getResolvedUserId();
+        const STORAGE_KEY = `madame_lara_game_state_v4_${currentUserId}`;
 
         const SUPABASE_URL = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
@@ -476,13 +496,11 @@
             const elapsedSec = Math.max(0, Math.floor((now - lastActive) / 1000));
 
             if (elapsedSec > 0) {
-                // Recover offline energy
                 if (loadedState.energy < loadedState.maxEnergy) {
                     const energyAdded = elapsedSec * (loadedState.rechargeRate || 1);
                     loadedState.energy = Math.min(loadedState.maxEnergy, loadedState.energy + energyAdded);
                 }
 
-                // Add offline passive income
                 if (loadedState.passiveIncomeRate > 0) {
                     const passiveGained = Math.floor((loadedState.passiveIncomeRate / 3600) * elapsedSec);
                     if (passiveGained > 0) {
@@ -522,21 +540,22 @@
             }
             
             if (cloudSaveTimer) clearTimeout(cloudSaveTimer);
-            cloudSaveTimer = setTimeout(syncToCloud, 3000);
+            cloudSaveTimer = setTimeout(syncToCloud, 1500);
         }
 
-        // IMMEDIATE CLOUD SAVE ON APP EXIT
-        function syncToCloudImmediate() {
-            if (!supabaseClient || currentUserId === "guest_user") return;
+        async function syncToCloudImmediate() {
+            if (!supabaseClient) return;
             state.lastActiveTimestamp = Date.now();
             
-            // Persist to local storage immediately
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {}
 
+            const numericId = parseInt(currentUserId);
+            if (isNaN(numericId)) return;
+
             const payload = {
-                telegram_id: parseInt(currentUserId),
+                telegram_id: numericId,
                 username: telegramUsername,
                 diamonds: Math.floor(state.diamonds),
                 total_points: Math.floor(state.diamonds),
@@ -545,38 +564,51 @@
                 multitap_level: state.multitapLevel,
                 energy_level: state.energyLevel,
                 recharge_level: state.rechargeLevel,
+                passive_income_rate: state.passiveIncomeRate,
                 has_autobot: state.hasAutoBot,
                 unlocked_contents: state.unlockedContents,
                 unlocked_badges: state.unlockedBadges
             };
 
             try {
-                supabaseClient.from('slaves').upsert(payload, { onConflict: 'telegram_id' });
+                const { error } = await supabaseClient.from('slaves').upsert(payload, { onConflict: 'telegram_id' });
+                if (error) {
+                    // Fallback to update total_points specifically if columns mismatch
+                    await supabaseClient.from('slaves').update({
+                        total_points: Math.floor(state.diamonds),
+                        diamonds: Math.floor(state.diamonds),
+                        energy: Math.floor(state.energy)
+                    }).eq('telegram_id', numericId);
+                }
+                console.log("✅ Immediate cloud sync completed for ID:", numericId);
             } catch (e) {
                 console.warn("Immediate cloud sync failed:", e);
             }
         }
 
         async function syncFromCloud() {
-            if (!supabaseClient || currentUserId === "guest_user") return;
+            if (!supabaseClient) return;
+            const numericId = parseInt(currentUserId);
+            if (isNaN(numericId)) return;
+
             try {
                 const { data, error } = await supabaseClient
                     .from('slaves')
                     .select('*')
-                    .eq('telegram_id', parseInt(currentUserId))
-                    .single();
+                    .eq('telegram_id', numericId)
+                    .maybeSingle();
 
                 if (data && !error) {
-                    const cloudDiamonds = data.diamonds ?? data.total_points ?? 0;
-                    const cloudEnergy = data.energy ?? 0;
+                    const cloudDiamonds = data.total_points ?? data.diamonds ?? 0;
                     
-                    // SMART CLOUD-FIRST MERGE: Keep highest recorded values
+                    // Cloud-first merge logic: take maximum progress
                     state.diamonds = Math.max(state.diamonds, cloudDiamonds);
-                    state.energy = Math.max(state.energy, cloudEnergy);
+                    state.energy = Math.max(state.energy, data.energy ?? 0);
                     state.maxEnergy = Math.max(state.maxEnergy, data.max_energy ?? 500);
                     state.multitapLevel = Math.max(state.multitapLevel, data.multitap_level ?? 1);
                     state.energyLevel = Math.max(state.energyLevel, data.energy_level ?? 1);
                     state.rechargeLevel = Math.max(state.rechargeLevel, data.recharge_level ?? 1);
+                    state.passiveIncomeRate = Math.max(state.passiveIncomeRate, data.passive_income_rate ?? 0);
                     state.hasAutoBot = data.has_autobot ?? state.hasAutoBot;
                     
                     if (Array.isArray(data.unlocked_contents)) {
@@ -586,13 +618,11 @@
                         state.unlockedBadges = Array.from(new Set([...state.unlockedBadges, ...data.unlocked_badges]));
                     }
                     
-                    // Process offline recovery
                     processOfflineRegeneration(state);
-                    
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                     if (typeof updateUI === 'function') updateUI();
-                    console.log("✅ Game progress synchronized with Cloud!");
-                } else if (error && error.code === 'PGRST116') {
+                    console.log("✅ Progress synchronized from Supabase Cloud!");
+                } else if (!data) {
                     syncToCloudImmediate();
                 }
             } catch (e) {
@@ -601,10 +631,13 @@
         }
 
         async function syncToCloud() {
-            if (!supabaseClient || currentUserId === "guest_user") return;
+            if (!supabaseClient) return;
+            const numericId = parseInt(currentUserId);
+            if (isNaN(numericId)) return;
+
             try {
-                await supabaseClient.from('slaves').upsert({
-                    telegram_id: parseInt(currentUserId),
+                const payload = {
+                    telegram_id: numericId,
                     username: telegramUsername,
                     diamonds: Math.floor(state.diamonds),
                     total_points: Math.floor(state.diamonds),
@@ -613,13 +646,26 @@
                     multitap_level: state.multitapLevel,
                     energy_level: state.energyLevel,
                     recharge_level: state.rechargeLevel,
+                    passive_income_rate: state.passiveIncomeRate,
                     has_autobot: state.hasAutoBot,
                     unlocked_contents: state.unlockedContents,
                     unlocked_badges: state.unlockedBadges
-                }, { onConflict: 'telegram_id' });
-                console.log("☁️ Game progress saved to Supabase Cloud database!");
+                };
+
+                const { error } = await supabaseClient.from('slaves').upsert(payload, { onConflict: 'telegram_id' });
+
+                if (error) {
+                    console.warn("Upsert warn, fallback update:", error);
+                    await supabaseClient.from('slaves').update({
+                        total_points: Math.floor(state.diamonds),
+                        diamonds: Math.floor(state.diamonds),
+                        energy: Math.floor(state.energy)
+                    }).eq('telegram_id', numericId);
+                } else {
+                    console.log("☁️ Saved to Supabase Cloud!");
+                }
             } catch (e) {
-                console.warn("Cloud save warning:", e);
+                console.warn("Cloud save exception:", e);
             }
         }
 
@@ -635,70 +681,25 @@
             }
         });
 
-        window.addEventListener('beforeunload', () => {
-            syncToCloudImmediate();
-        });
-
-        window.addEventListener('pagehide', () => {
-            syncToCloudImmediate();
-        });
+        window.addEventListener('beforeunload', () => { syncToCloudImmediate(); });
+        window.addEventListener('pagehide', () => { syncToCloudImmediate(); });
 
         window.addEventListener('DOMContentLoaded', () => {
             const refInput = document.getElementById('ref-link-input');
             if (refInput) {
                 refInput.value = `https://t.me/madamelara_bot?start=ref_${currentUserId}`;
             }
+            const profileIdEl = document.getElementById('profile-tg-id');
+            if (profileIdEl) {
+                profileIdEl.innerText = `ID: ${currentUserId}`;
+            }
         });
 
-        const startParam = tg?.initDataUnsafe?.start_param;
-        if (startParam) {
-            if (startParam.startsWith('ref_') && !state.claimedRef) {
-                state.claimedRef = true;
-                setTimeout(() => showToast("🎉 Welcome! You joined via a friend's invitation!"), 1000);
-            } else if (startParam === 'channel_verified' && !state.claimedChannelTask) {
-                state.claimedChannelTask = true;
-                state.diamonds += 1000;
-                setTimeout(() => showToast("🎉 Telegram Channel Task Verified! +1,000 💎 claimed!"), 1000);
-            }
-        }
-
         const demoCards = [
-            { 
-                id: 'card_1', 
-                title: 'First Encounter', 
-                cost: 2500, 
-                starsCost: 10, 
-                passiveBonus: 25, 
-                bonusText: '💰 +25 💎/hr & ⚡ +0.10x Multiplier', 
-                img: 'assets/lara_50_1.png' 
-            },
-            { 
-                id: 'card_2', 
-                title: 'Sharp Glances', 
-                cost: 8000, 
-                starsCost: 35, 
-                passiveBonus: 80, 
-                bonusText: '💰 +80 💎/hr & 🔋 +250 Energy', 
-                img: 'assets/lara_100_1.png' 
-            },
-            { 
-                id: 'card_3', 
-                title: 'Leather Elegance', 
-                cost: 25000, 
-                starsCost: 100, 
-                passiveBonus: 250, 
-                bonusText: '💰 +250 💎/hr & ⚡ +0.25x Multiplier', 
-                img: 'assets/lara_200_1.png' 
-            },
-            { 
-                id: 'card_4', 
-                title: 'Throne Queen', 
-                cost: 75000, 
-                starsCost: 300, 
-                passiveBonus: 750, 
-                bonusText: '💰 +750 💎/hr Passive Income', 
-                img: 'assets/lara_200_1.png' 
-            }
+            { id: 'card_1', title: 'First Encounter', cost: 2500, starsCost: 10, passiveBonus: 25, bonusText: '💰 +25 💎/hr & ⚡ +0.10x Multiplier', img: 'assets/lara_50_1.png' },
+            { id: 'card_2', title: 'Sharp Glances', cost: 8000, starsCost: 35, passiveBonus: 80, bonusText: '💰 +80 💎/hr & 🔋 +250 Energy', img: 'assets/lara_100_1.png' },
+            { id: 'card_3', title: 'Leather Elegance', cost: 25000, starsCost: 100, passiveBonus: 250, bonusText: '💰 +250 💎/hr & ⚡ +0.25x Multiplier', img: 'assets/lara_200_1.png' },
+            { id: 'card_4', title: 'Throne Queen', cost: 75000, starsCost: 300, passiveBonus: 750, bonusText: '💰 +750 💎/hr Passive Income', img: 'assets/lara_200_1.png' }
         ];
 
         const badgesData = [
@@ -1066,16 +1067,8 @@
                 if (tg && tg.openTelegramLink) {
                     tg.openTelegramLink(deepLinkUrl);
                     if (tg.close) {
-                        setTimeout(() => {
-                            tg.close();
-                        }, 100);
+                        setTimeout(() => { tg.close(); }, 100);
                     }
-                } else if (tg && tg.openInvoice) {
-                    tg.openInvoice(deepLinkUrl, function(status) {
-                        if (status === 'paid') {
-                            showToast("🎉 Payment Successful!");
-                        }
-                    });
                 } else {
                     window.open(deepLinkUrl, '_blank');
                 }
@@ -1239,6 +1232,8 @@
             if (touchesEl) touchesEl.innerText = state.totalTouches.toLocaleString('en-US');
             const passiveEl = document.getElementById('stat-passive');
             if (passiveEl) passiveEl.innerText = `${state.passiveIncomeRate} 💎/hr`;
+            const profileIdEl = document.getElementById('profile-tg-id');
+            if (profileIdEl) profileIdEl.innerText = `ID: ${currentUserId}`;
 
             renderBadges();
         }
