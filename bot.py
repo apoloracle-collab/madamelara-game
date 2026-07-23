@@ -285,8 +285,7 @@ def send_welcome(message):
     )
     
     markup = types.InlineKeyboardMarkup()
-    cache_buster = int(time.time())
-    full_app_url = f"{VERCEL_WEB_APP_URL}?v={cache_buster}"
+    full_app_url = VERCEL_WEB_APP_URL
     
     web_app_info = types.WebAppInfo(url=full_app_url)
     btn_enter = types.InlineKeyboardButton("👑 Play / Open Portal", web_app=web_app_info)
