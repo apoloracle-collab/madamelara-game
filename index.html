@@ -298,7 +298,7 @@
                                 <div class="text-[10px] text-yellow-400 font-mono mt-0.5">+1,000 💎</div>
                             </div>
                         </div>
-                        <button onclick="claimSocialTask('telegram', 1000, 'https://t.me/+XrzPL2PXnYxkNjk0')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
+                        <button id="tg-task-btn" onclick="claimSocialTask('telegram', 1000, 'https://t.me/+XrzPL2PXnYxkNjk0')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
                             Claim
                         </button>
                     </div>
@@ -313,7 +313,7 @@
                                 <div class="text-[10px] text-yellow-400 font-mono mt-0.5">+1,000 💎</div>
                             </div>
                         </div>
-                        <button onclick="claimSocialTask('x', 1000, 'https://x.com/laragameportal')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
+                        <button id="x-task-btn" onclick="claimSocialTask('x', 1000, 'https://x.com/laragameportal')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
                             Claim
                         </button>
                     </div>
@@ -437,7 +437,8 @@
 
         const telegramUsername = tg?.initDataUnsafe?.user?.username || "Devotee";
 
-        const STORAGE_KEY = "madame_lara_game_state_v2";
+        const currentUserId = tg?.initDataUnsafe?.user?.id || "guest";
+        const STORAGE_KEY = `madame_lara_game_state_v3_${currentUserId}`;
 
         const defaultState = {
             diamonds: 0,
@@ -457,7 +458,8 @@
             totalTouches: 0,
             unlockedContents: [],
             claimedRef: false,
-            claimedChannelTask: false
+            claimedChannelTask: false,
+            claimedXTask: false
         };
 
         function loadState() {
@@ -578,6 +580,7 @@
 
             if (tabId === 'boosters') renderAutoBotCard();
             if (tabId === 'portal') renderPortalCards();
+            if (tabId === 'tasks') renderTaskButtons();
             if (tabId === 'profile') renderProfileData();
         }
 
@@ -1009,8 +1012,36 @@
             }
         }
 
+        function renderTaskButtons() {
+            const tgBtn = document.getElementById('tg-task-btn');
+            if (tgBtn) {
+                if (state.claimedChannelTask) {
+                    tgBtn.innerText = 'Claimed ✅';
+                    tgBtn.className = 'bg-neutral-800 text-gray-400 font-bold text-xs px-3.5 py-1.5 rounded-xl cursor-not-allowed';
+                } else {
+                    tgBtn.innerText = 'Claim';
+                    tgBtn.className = 'bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition';
+                }
+            }
+
+            const xBtn = document.getElementById('x-task-btn');
+            if (xBtn) {
+                if (state.claimedXTask) {
+                    xBtn.innerText = 'Claimed ✅';
+                    xBtn.className = 'bg-neutral-800 text-gray-400 font-bold text-xs px-3.5 py-1.5 rounded-xl cursor-not-allowed';
+                } else {
+                    xBtn.innerText = 'Claim';
+                    xBtn.className = 'bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition';
+                }
+            }
+        }
+
         function claimSocialTask(taskId, reward, link) {
             if (taskId === 'telegram') {
+                if (state.claimedChannelTask) {
+                    showToast("Telegram channel task already claimed! ✅");
+                    return;
+                }
                 const deepLinkUrl = "https://t.me/madamelara_bot?start=check_telegram_channel";
                 if (tg && tg.openTelegramLink) {
                     tg.openTelegramLink(deepLinkUrl);
@@ -1018,13 +1049,22 @@
                 } else {
                     window.open(deepLinkUrl, '_blank');
                 }
-            } else {
+            } else if (taskId === 'x') {
+                if (state.claimedXTask) {
+                    showToast("X task already claimed! ✅");
+                    return;
+                }
                 window.open(link, '_blank');
                 setTimeout(() => {
-                    state.diamonds += reward;
-                    showToast(`Task completed! +${reward} 💎 claimed.`);
-                    updateUI();
-                }, 1500);
+                    if (!state.claimedXTask) {
+                        state.claimedXTask = true;
+                        state.diamonds += reward;
+                        saveState();
+                        showToast(`Task completed! +${reward.toLocaleString('en-US')} 💎 claimed.`);
+                        updateUI();
+                        renderTaskButtons();
+                    }
+                }, 1200);
             }
         }
 
@@ -1104,6 +1144,7 @@
 
         updateUI();
         renderAutoBotCard();
+        renderTaskButtons();
     </script>
 </body>
 </html>
