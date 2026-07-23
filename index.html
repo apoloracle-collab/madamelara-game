@@ -435,6 +435,11 @@
             tg.setBackgroundColor('#111111');
         }
 
+        function getTodayDateString() {
+            const today = new Date();
+            return `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+        }
+
         function resolveTelegramUser() {
             let user = tg?.initDataUnsafe?.user;
             if (user && user.id) return user;
@@ -467,7 +472,7 @@
         localStorage.setItem('cached_tg_user_id', currentUserId);
         localStorage.setItem('cached_tg_username', telegramUsername);
 
-        const STORAGE_KEY = `madame_lara_game_state_v7_${currentUserId}`;
+        const STORAGE_KEY = `madame_lara_game_state_v9_${currentUserId}`;
 
         const SUPABASE_URL = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
@@ -491,6 +496,7 @@
             rechargeLevel: 1,
             dailyTankCount: 3,
             dailyGuruCount: 3,
+            dailyBoostDate: getTodayDateString(),
             isGuruActive: false,
             hasAutoBot: false,
             botLastClaimTimestamp: Date.now(),
@@ -508,6 +514,14 @@
             const now = Date.now();
             const lastActive = loadedState.lastActiveTimestamp || now;
             const elapsedSec = Math.max(0, Math.floor((now - lastActive) / 1000));
+
+            // Reset daily boosts if date changed
+            const todayStr = getTodayDateString();
+            if (loadedState.dailyBoostDate !== todayStr) {
+                loadedState.dailyTankCount = 3;
+                loadedState.dailyGuruCount = 3;
+                loadedState.dailyBoostDate = todayStr;
+            }
 
             if (elapsedSec > 0) {
                 if (loadedState.energy < loadedState.maxEnergy) {
@@ -555,6 +569,13 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {}
 
+            // Encode daily boost state into unlockedBadges array to persist across devices without DB schema changes
+            const todayStr = getTodayDateString();
+            const cleanBadges = state.unlockedBadges.filter(b => !b.startsWith('__boost_'));
+            cleanBadges.push(`__boost_tank_${state.dailyTankCount}`);
+            cleanBadges.push(`__boost_guru_${state.dailyGuruCount}`);
+            cleanBadges.push(`__boost_date_${todayStr}`);
+
             const payload = {
                 telegram_id: parseInt(currentUserId),
                 username: telegramUsername,
@@ -568,14 +589,14 @@
                 passive_income_rate: state.passiveIncomeRate,
                 has_autobot: state.hasAutoBot,
                 unlocked_contents: state.unlockedContents,
-                unlocked_badges: state.unlockedBadges,
+                unlocked_badges: cleanBadges,
                 extra_time: state.totalTouches,
                 active_multiplier: state.activeMultiplier
             };
 
             try {
                 await supabaseClient.from('slaves').upsert(payload, { onConflict: 'telegram_id' });
-                console.log("☁️ Supabase sync successful!");
+                console.log("☁️ Supabase cloud sync successful!");
             } catch (e) {
                 console.warn("Cloud sync error:", e);
             } finally {
@@ -607,8 +628,38 @@
                     if (Array.isArray(data.unlocked_contents)) {
                         state.unlockedContents = Array.from(new Set([...state.unlockedContents, ...data.unlocked_contents]));
                     }
+
+                    // Decode daily boosts & badges from cloud
                     if (Array.isArray(data.unlocked_badges)) {
-                        state.unlockedBadges = Array.from(new Set([...state.unlockedBadges, ...data.unlocked_badges]));
+                        const todayStr = getTodayDateString();
+                        let cloudDate = todayStr;
+                        let cloudTank = 3;
+                        let cloudGuru = 3;
+
+                        const userBadgesOnly = [];
+                        data.unlocked_badges.forEach(badge => {
+                            if (badge.startsWith('__boost_tank_')) {
+                                cloudTank = parseInt(badge.replace('__boost_tank_', ''));
+                            } else if (badge.startsWith('__boost_guru_')) {
+                                cloudGuru = parseInt(badge.replace('__boost_guru_', ''));
+                            } else if (badge.startsWith('__boost_date_')) {
+                                cloudDate = badge.replace('__boost_date_', '');
+                            } else {
+                                userBadgesOnly.push(badge);
+                            }
+                        });
+
+                        state.unlockedBadges = Array.from(new Set([...state.unlockedBadges.filter(b => !b.startsWith('__boost_')), ...userBadgesOnly]));
+
+                        if (cloudDate === todayStr) {
+                            state.dailyTankCount = cloudTank;
+                            state.dailyGuruCount = cloudGuru;
+                            state.dailyBoostDate = todayStr;
+                        } else {
+                            state.dailyTankCount = 3;
+                            state.dailyGuruCount = 3;
+                            state.dailyBoostDate = todayStr;
+                        }
                     }
 
                     recalculateCardBonuses();
@@ -626,7 +677,7 @@
 
         setInterval(() => {
             syncToCloud();
-        }, 4000);
+        }, 3000);
 
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -964,6 +1015,12 @@
             const passiveEl = document.getElementById('passive-rate-display');
             if (passiveEl) passiveEl.innerText = state.passiveIncomeRate;
 
+            const fullTankEl = document.getElementById('full-tank-count');
+            if (fullTankEl) fullTankEl.innerText = `${state.dailyTankCount}/3`;
+
+            const guruEl = document.getElementById('guru-count');
+            if (guruEl) guruEl.innerText = `${state.dailyGuruCount}/3`;
+
             const laraImg = document.getElementById('lara-image');
             if (laraImg) {
                 if (state.diamonds >= 50000) {
@@ -1001,6 +1058,7 @@
             document.getElementById('full-tank-count').innerText = `${state.dailyTankCount}/3`;
             showToast("Energy fully refilled! 🔋");
             updateUI();
+            syncToCloud();
         }
 
         function useDailyGuru() {
@@ -1017,6 +1075,8 @@
             const targetBox = document.getElementById('lara-target-box');
             if (targetBox) targetBox.classList.add('guru-active');
             showToast("🔥 Tapping Guru Active! 5x Power for 20s!");
+
+            syncToCloud();
 
             setTimeout(() => {
                 state.isGuruActive = false;
