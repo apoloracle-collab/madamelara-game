@@ -325,7 +325,7 @@
                         </p>
 
                         <div class="flex space-x-2">
-                            <input id="ref-link-input" type="text" readonly value="https://t.me/madamelara_bot?start=ref_12345" class="bg-[#222] border border-[#333] text-gray-300 text-xs rounded-xl px-3 py-2 w-full font-mono">
+                            <input id="ref-link-input" type="text" readonly value="https://t.me/madamelara_bot?start=ref_742461382" class="bg-[#222] border border-[#333] text-gray-300 text-xs rounded-xl px-3 py-2 w-full font-mono">
                             <button onclick="copyRefLink()" class="bg-[#d4af37] hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-2 rounded-xl shrink-0 transition">
                                 Copy
                             </button>
@@ -340,8 +340,7 @@
                         👑
                     </div>
                     <h2 id="profile-username-text" class="font-bold text-base mt-2.5 text-white">@Devotee</h2>
-                    <p id="profile-rank-text" class="text-xs text-yellow-500 font-mono mt-0.5">Bronze Supporter</p>
-                    <div id="profile-tg-id" class="text-[11px] text-[#d4af37] font-mono mt-1">ID: Loading...</div>
+                    <p id="profile-tg-id" class="text-xs text-[#d4af37] font-mono mt-0.5">ID: Loading...</p>
 
                     <div class="grid grid-cols-2 gap-2.5 mt-4 text-left text-xs bg-[#111] p-3 rounded-xl border border-[#222]">
                         <div>
@@ -432,28 +431,44 @@
             tg.setBackgroundColor('#111111');
         }
 
-        const telegramUsername = tg?.initDataUnsafe?.user?.username || "Devotee";
+        // CANVA SUGGESTION 1: Parse user directly from tg.initData & initDataUnsafe
+        function resolveTelegramUser() {
+            let user = tg?.initDataUnsafe?.user;
+            if (user && user.id) return user;
 
-        // ROBUST USER ID RESOLUTION Across Platforms (Mobile, Web, Desktop)
-        function getResolvedUserId() {
-            if (tg?.initDataUnsafe?.user?.id) {
-                const idStr = String(tg.initDataUnsafe.user.id);
-                localStorage.setItem('cached_tg_user_id', idStr);
-                return idStr;
+            // Fallback: parse raw query string tg.initData
+            if (tg?.initData) {
+                try {
+                    const searchParams = new URLSearchParams(tg.initData);
+                    const userJson = searchParams.get('user');
+                    if (userJson) {
+                        return JSON.parse(userJson);
+                    }
+                } catch (e) {
+                    console.warn("Error parsing initData string:", e);
+                }
             }
-            const cached = localStorage.getItem('cached_tg_user_id');
-            if (cached) return cached;
-            
-            let guestId = localStorage.getItem('guest_fallback_id');
-            if (!guestId) {
-                guestId = String(Math.floor(100000000 + Math.random() * 900000000));
-                localStorage.setItem('guest_fallback_id', guestId);
+
+            // Check cached ID from local storage
+            const cachedId = localStorage.getItem('cached_tg_user_id');
+            const cachedUsername = localStorage.getItem('cached_tg_username') || "Devotee";
+            if (cachedId) {
+                return { id: parseInt(cachedId), username: cachedUsername };
             }
-            return guestId;
+
+            // Fallback default
+            return { id: 742461382, username: "Devotee" };
         }
 
-        const currentUserId = getResolvedUserId();
-        const STORAGE_KEY = `madame_lara_game_state_v4_${currentUserId}`;
+        const tgUser = resolveTelegramUser();
+        const currentUserId = String(tgUser.id);
+        const telegramUsername = tgUser.username || "Devotee";
+
+        // Cache resolved credentials
+        localStorage.setItem('cached_tg_user_id', currentUserId);
+        localStorage.setItem('cached_tg_username', telegramUsername);
+
+        const STORAGE_KEY = `madame_lara_game_state_v6_${currentUserId}`;
 
         const SUPABASE_URL = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
@@ -516,46 +531,33 @@
             return loadedState;
         }
 
-        function loadState() {
+        function loadLocalState() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    const merged = { ...defaultState, ...parsed };
-                    return processOfflineRegeneration(merged);
+                    return processOfflineRegeneration({ ...defaultState, ...parsed });
                 }
             } catch (e) {
-                console.error("Failed to load state", e);
+                console.error("Failed to load local state", e);
             }
             return { ...defaultState, lastActiveTimestamp: Date.now() };
         }
 
-        let cloudSaveTimer = null;
-        function saveState() {
-            state.lastActiveTimestamp = Date.now();
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            } catch (e) {
-                console.error("Failed to save local state", e);
-            }
-            
-            if (cloudSaveTimer) clearTimeout(cloudSaveTimer);
-            cloudSaveTimer = setTimeout(syncToCloud, 1500);
-        }
+        let state = loadLocalState();
 
-        async function syncToCloudImmediate() {
-            if (!supabaseClient) return;
+        let isSyncing = false;
+        async function syncToCloud() {
+            if (!supabaseClient || isSyncing) return;
+            isSyncing = true;
             state.lastActiveTimestamp = Date.now();
-            
+
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {}
 
-            const numericId = parseInt(currentUserId);
-            if (isNaN(numericId)) return;
-
             const payload = {
-                telegram_id: numericId,
+                telegram_id: parseInt(currentUserId),
                 username: telegramUsername,
                 diamonds: Math.floor(state.diamonds),
                 total_points: Math.floor(state.diamonds),
@@ -571,135 +573,137 @@
             };
 
             try {
-                const { error } = await supabaseClient.from('slaves').upsert(payload, { onConflict: 'telegram_id' });
-                if (error) {
-                    // Fallback to update total_points specifically if columns mismatch
-                    await supabaseClient.from('slaves').update({
-                        total_points: Math.floor(state.diamonds),
-                        diamonds: Math.floor(state.diamonds),
-                        energy: Math.floor(state.energy)
-                    }).eq('telegram_id', numericId);
-                }
-                console.log("✅ Immediate cloud sync completed for ID:", numericId);
+                await supabaseClient.from('slaves').upsert(payload, { onConflict: 'telegram_id' });
+                console.log("☁️ Supabase sync successful!");
             } catch (e) {
-                console.warn("Immediate cloud sync failed:", e);
+                console.warn("Cloud sync error:", e);
+            } finally {
+                isSyncing = false;
             }
         }
 
-        async function syncFromCloud() {
+        // CANVA SUGGESTION 2: FETCH ON LOAD (Fetch from Supabase immediately on startup)
+        async function fetchFromCloudOnLoad() {
             if (!supabaseClient) return;
-            const numericId = parseInt(currentUserId);
-            if (isNaN(numericId)) return;
-
             try {
                 const { data, error } = await supabaseClient
                     .from('slaves')
                     .select('*')
-                    .eq('telegram_id', numericId)
+                    .eq('telegram_id', parseInt(currentUserId))
                     .maybeSingle();
 
                 if (data && !error) {
-                    const cloudDiamonds = data.total_points ?? data.diamonds ?? 0;
+                    const cloudDiamonds = data.diamonds ?? data.total_points ?? 0;
                     
-                    // Cloud-first merge logic: take maximum progress
+                    // Merge highest numbers
                     state.diamonds = Math.max(state.diamonds, cloudDiamonds);
-                    state.energy = Math.max(state.energy, data.energy ?? 0);
+                    state.energy = Math.max(state.energy, data.energy ?? state.energy);
                     state.maxEnergy = Math.max(state.maxEnergy, data.max_energy ?? 500);
                     state.multitapLevel = Math.max(state.multitapLevel, data.multitap_level ?? 1);
                     state.energyLevel = Math.max(state.energyLevel, data.energy_level ?? 1);
                     state.rechargeLevel = Math.max(state.rechargeLevel, data.recharge_level ?? 1);
-                    state.passiveIncomeRate = Math.max(state.passiveIncomeRate, data.passive_income_rate ?? 0);
                     state.hasAutoBot = data.has_autobot ?? state.hasAutoBot;
-                    
+
                     if (Array.isArray(data.unlocked_contents)) {
                         state.unlockedContents = Array.from(new Set([...state.unlockedContents, ...data.unlocked_contents]));
                     }
                     if (Array.isArray(data.unlocked_badges)) {
                         state.unlockedBadges = Array.from(new Set([...state.unlockedBadges, ...data.unlocked_badges]));
                     }
-                    
+
                     processOfflineRegeneration(state);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-                    if (typeof updateUI === 'function') updateUI();
-                    console.log("✅ Progress synchronized from Supabase Cloud!");
-                } else if (!data) {
-                    syncToCloudImmediate();
-                }
-            } catch (e) {
-                console.warn("Cloud sync load warning:", e);
-            }
-        }
-
-        async function syncToCloud() {
-            if (!supabaseClient) return;
-            const numericId = parseInt(currentUserId);
-            if (isNaN(numericId)) return;
-
-            try {
-                const payload = {
-                    telegram_id: numericId,
-                    username: telegramUsername,
-                    diamonds: Math.floor(state.diamonds),
-                    total_points: Math.floor(state.diamonds),
-                    energy: Math.floor(state.energy),
-                    max_energy: state.maxEnergy,
-                    multitap_level: state.multitapLevel,
-                    energy_level: state.energyLevel,
-                    recharge_level: state.rechargeLevel,
-                    passive_income_rate: state.passiveIncomeRate,
-                    has_autobot: state.hasAutoBot,
-                    unlocked_contents: state.unlockedContents,
-                    unlocked_badges: state.unlockedBadges
-                };
-
-                const { error } = await supabaseClient.from('slaves').upsert(payload, { onConflict: 'telegram_id' });
-
-                if (error) {
-                    console.warn("Upsert warn, fallback update:", error);
-                    await supabaseClient.from('slaves').update({
-                        total_points: Math.floor(state.diamonds),
-                        diamonds: Math.floor(state.diamonds),
-                        energy: Math.floor(state.energy)
-                    }).eq('telegram_id', numericId);
+                    updateUI();
+                    console.log("✅ Successfully fetched latest state from Supabase on load!");
                 } else {
-                    console.log("☁️ Saved to Supabase Cloud!");
+                    // Initialize user record if non-existent
+                    await syncToCloud();
                 }
             } catch (e) {
-                console.warn("Cloud save exception:", e);
+                console.warn("Fetch on load warning:", e);
             }
         }
 
-        let state = loadState();
-        syncFromCloud();
+        // CANVA SUGGESTION 3: BATCH SAVE INTERVAL (Every 5 seconds)
+        setInterval(() => {
+            syncToCloud();
+        }, 5000);
 
+        // Immediate sync when application is closed or placed in background
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                syncToCloudImmediate();
+                syncToCloud();
             } else {
-                state = processOfflineRegeneration(state);
-                updateUI();
+                fetchFromCloudOnLoad();
             }
         });
 
-        window.addEventListener('beforeunload', () => { syncToCloudImmediate(); });
-        window.addEventListener('pagehide', () => { syncToCloudImmediate(); });
+        window.addEventListener('beforeunload', () => syncToCloud());
+        window.addEventListener('pagehide', () => syncToCloud());
 
         window.addEventListener('DOMContentLoaded', () => {
+            fetchFromCloudOnLoad();
+
             const refInput = document.getElementById('ref-link-input');
             if (refInput) {
                 refInput.value = `https://t.me/madamelara_bot?start=ref_${currentUserId}`;
             }
-            const profileIdEl = document.getElementById('profile-tg-id');
-            if (profileIdEl) {
-                profileIdEl.innerText = `ID: ${currentUserId}`;
+
+            const profileTgId = document.getElementById('profile-tg-id');
+            if (profileTgId) {
+                profileTgId.innerText = `ID: ${currentUserId}`;
             }
         });
 
+        const startParam = tg?.initDataUnsafe?.start_param;
+        if (startParam) {
+            if (startParam.startsWith('ref_') && !state.claimedRef) {
+                state.claimedRef = true;
+                setTimeout(() => showToast("🎉 Welcome! You joined via a friend's invitation!"), 1000);
+            } else if (startParam === 'channel_verified' && !state.claimedChannelTask) {
+                state.claimedChannelTask = true;
+                state.diamonds += 1000;
+                setTimeout(() => showToast("🎉 Telegram Channel Task Verified! +1,000 💎 claimed!"), 1000);
+            }
+        }
+
         const demoCards = [
-            { id: 'card_1', title: 'First Encounter', cost: 2500, starsCost: 10, passiveBonus: 25, bonusText: '💰 +25 💎/hr & ⚡ +0.10x Multiplier', img: 'assets/lara_50_1.png' },
-            { id: 'card_2', title: 'Sharp Glances', cost: 8000, starsCost: 35, passiveBonus: 80, bonusText: '💰 +80 💎/hr & 🔋 +250 Energy', img: 'assets/lara_100_1.png' },
-            { id: 'card_3', title: 'Leather Elegance', cost: 25000, starsCost: 100, passiveBonus: 250, bonusText: '💰 +250 💎/hr & ⚡ +0.25x Multiplier', img: 'assets/lara_200_1.png' },
-            { id: 'card_4', title: 'Throne Queen', cost: 75000, starsCost: 300, passiveBonus: 750, bonusText: '💰 +750 💎/hr Passive Income', img: 'assets/lara_200_1.png' }
+            { 
+                id: 'card_1', 
+                title: 'First Encounter', 
+                cost: 2500, 
+                starsCost: 10, 
+                passiveBonus: 25, 
+                bonusText: '💰 +25 💎/hr & ⚡ +0.10x Multiplier', 
+                img: 'assets/lara_50_1.png' 
+            },
+            { 
+                id: 'card_2', 
+                title: 'Sharp Glances', 
+                cost: 8000, 
+                starsCost: 35, 
+                passiveBonus: 80, 
+                bonusText: '💰 +80 💎/hr & 🔋 +250 Energy', 
+                img: 'assets/lara_100_1.png' 
+            },
+            { 
+                id: 'card_3', 
+                title: 'Leather Elegance', 
+                cost: 25000, 
+                starsCost: 100, 
+                passiveBonus: 250, 
+                bonusText: '💰 +250 💎/hr & ⚡ +0.25x Multiplier', 
+                img: 'assets/lara_200_1.png' 
+            },
+            { 
+                id: 'card_4', 
+                title: 'Throne Queen', 
+                cost: 75000, 
+                starsCost: 300, 
+                passiveBonus: 750, 
+                bonusText: '💰 +750 💎/hr Passive Income', 
+                img: 'assets/lara_200_1.png' 
+            }
         ];
 
         const badgesData = [
@@ -931,7 +935,6 @@
         }
 
         function updateUI() {
-            saveState();
             const scoreEl = document.getElementById('score-display');
             if (scoreEl) scoreEl.innerText = Math.floor(state.diamonds).toLocaleString('en-US');
 
@@ -1067,8 +1070,16 @@
                 if (tg && tg.openTelegramLink) {
                     tg.openTelegramLink(deepLinkUrl);
                     if (tg.close) {
-                        setTimeout(() => { tg.close(); }, 100);
+                        setTimeout(() => {
+                            tg.close();
+                        }, 100);
                     }
+                } else if (tg && tg.openInvoice) {
+                    tg.openInvoice(deepLinkUrl, function(status) {
+                        if (status === 'paid') {
+                            showToast("🎉 Payment Successful!");
+                        }
+                    });
                 } else {
                     window.open(deepLinkUrl, '_blank');
                 }
@@ -1203,7 +1214,6 @@
                     if (!state.claimedXTask) {
                         state.claimedXTask = true;
                         state.diamonds += reward;
-                        saveState();
                         showToast(`Task completed! +${reward.toLocaleString('en-US')} 💎 claimed.`);
                         updateUI();
                         renderTaskButtons();
@@ -1228,12 +1238,12 @@
         function renderProfileData() {
             const userEl = document.getElementById('profile-username-text');
             if (userEl) userEl.innerText = `@${telegramUsername}`;
+            const profileTgId = document.getElementById('profile-tg-id');
+            if (profileTgId) profileTgId.innerText = `ID: ${currentUserId}`;
             const touchesEl = document.getElementById('stat-touches');
             if (touchesEl) touchesEl.innerText = state.totalTouches.toLocaleString('en-US');
             const passiveEl = document.getElementById('stat-passive');
             if (passiveEl) passiveEl.innerText = `${state.passiveIncomeRate} 💎/hr`;
-            const profileIdEl = document.getElementById('profile-tg-id');
-            if (profileIdEl) profileIdEl.innerText = `ID: ${currentUserId}`;
 
             renderBadges();
         }
