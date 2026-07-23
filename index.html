@@ -105,7 +105,6 @@
 
         <main class="flex-1 relative overflow-y-auto pb-20">
 
-            <!-- EARN TAB -->
             <section id="screen-earn" class="screen-panel flex flex-col justify-between items-center h-full p-4">
                 <div class="w-full bg-[#18150c] border border-[#3d3211] rounded-2xl p-3 flex justify-between items-center text-xs">
                     <div class="flex items-center space-x-2.5">
@@ -150,7 +149,6 @@
                 </div>
             </section>
 
-            <!-- BOOSTERS TAB -->
             <section id="screen-boosters" class="screen-panel hidden p-4 space-y-5">
                 <div>
                     <h2 class="text-base font-bold text-[#d4af37]">Free Daily Boosts</h2>
@@ -269,7 +267,6 @@
                 </div>
             </section>
 
-            <!-- PORTAL TAB -->
             <section id="screen-portal" class="screen-panel hidden p-4 space-y-4">
                 <div>
                     <h2 class="text-base font-bold text-[#d4af37]">Secret Portal</h2>
@@ -279,7 +276,6 @@
                 <div id="gallery-grid-container" class="grid grid-cols-2 gap-3 pt-2"></div>
             </section>
 
-            <!-- TASKS TAB -->
             <section id="screen-tasks" class="screen-panel hidden p-4 space-y-4">
                 <div>
                     <h2 class="text-base font-bold text-[#d4af37]">Tasks & Invites</h2>
@@ -338,7 +334,6 @@
                 </div>
             </section>
 
-            <!-- PROFILE TAB -->
             <section id="screen-profile" class="screen-panel hidden p-4 space-y-4">
                 <div class="text-center bg-[#181818] border border-[#2a2a2a] rounded-2xl p-4 gold-glow">
                     <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-[#d4af37] to-amber-200 text-black text-3xl font-bold flex items-center justify-center mx-auto shadow-lg">
@@ -394,7 +389,6 @@
             </button>
         </nav>
 
-        <!-- FULLSCREEN MODALS -->
         <div id="image-modal" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
             <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white text-3xl font-bold p-2">&times;</button>
             <img id="modal-full-img" src="" alt="Content" class="max-w-full max-h-[75vh] object-contain rounded-2xl border-2 border-[#d4af37] shadow-2xl">
@@ -442,7 +436,6 @@
         const currentUserId = tg?.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : "guest_user";
         const STORAGE_KEY = `madame_lara_game_state_v3_${currentUserId}`;
 
-        // Supabase Cloud Initialization
         const SUPABASE_URL = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
         let supabaseClient = null;
@@ -497,7 +490,6 @@
                 console.error("Failed to save local state", e);
             }
             
-            // Debounced Cloud Sync to Supabase
             if (cloudSaveTimer) clearTimeout(cloudSaveTimer);
             cloudSaveTimer = setTimeout(syncToCloud, 3000);
         }
@@ -557,7 +549,6 @@
         let state = loadState();
         syncFromCloud();
 
-        // Dynamically set referral link for this user
         window.addEventListener('DOMContentLoaded', () => {
             const refInput = document.getElementById('ref-link-input');
             if (refInput) {
@@ -972,9 +963,6 @@
             if (modal) modal.classList.remove('hidden');
         }
 
-        // TELEGRAM STARS REDIRECT FIX:
-        // Use tg.openTelegramLink to switch directly to the Telegram bot chat.
-        // Telegram WebApp SDK routes this command to bot.py which immediately returns the Stars invoice.
         function confirmStarsRedirect() {
             closeStarsModal();
             if (pendingStarsCommand) {
