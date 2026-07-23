@@ -80,6 +80,7 @@
 
     <div id="app-container" class="w-full max-w-md h-full sm:h-[92vh] sm:max-h-[850px] bg-[#111111] relative flex flex-col overflow-hidden sm:rounded-3xl border border-[#222] shadow-2xl">
 
+        <!-- HEADER BAR -->
         <header class="w-full bg-[#161616] border-b border-[#262626] px-4 py-3 flex items-center justify-between z-20 shrink-0">
             <div class="flex items-center space-x-2">
                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#d4af37] to-[#8a6200] flex items-center justify-center text-black text-base shadow font-bold">
@@ -103,6 +104,7 @@
             </div>
         </header>
 
+        <!-- MAIN SCREEN CONTENT -->
         <main class="flex-1 relative overflow-y-auto pb-20">
 
             <section id="screen-earn" class="screen-panel flex flex-col justify-between items-center h-full p-4">
@@ -362,6 +364,7 @@
 
         </main>
 
+        <!-- NAVIGATION BAR -->
         <nav class="absolute bottom-0 inset-x-0 bg-[#141414] border-t border-[#2a2a2a] px-2 py-2 flex justify-around items-center z-30 pb-safe">
             <button id="nav-earn" onclick="switchTab('earn')" class="nav-btn flex flex-col items-center text-yellow-500 space-y-1">
                 <span class="text-lg"><i class="fa-solid fa-hand-pointer"></i></span>
@@ -389,6 +392,7 @@
             </button>
         </nav>
 
+        <!-- MODALS -->
         <div id="image-modal" class="hidden fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-4">
             <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white text-3xl font-bold p-2">&times;</button>
             <img id="modal-full-img" src="" alt="Content" class="max-w-full max-h-[75vh] object-contain rounded-2xl border-2 border-[#d4af37] shadow-2xl">
@@ -431,12 +435,10 @@
             tg.setBackgroundColor('#111111');
         }
 
-        // CANVA SUGGESTION 1: Parse user directly from tg.initData & initDataUnsafe
         function resolveTelegramUser() {
             let user = tg?.initDataUnsafe?.user;
             if (user && user.id) return user;
 
-            // Fallback: parse raw query string tg.initData
             if (tg?.initData) {
                 try {
                     const searchParams = new URLSearchParams(tg.initData);
@@ -449,26 +451,23 @@
                 }
             }
 
-            // Check cached ID from local storage
             const cachedId = localStorage.getItem('cached_tg_user_id');
             const cachedUsername = localStorage.getItem('cached_tg_username') || "Devotee";
             if (cachedId) {
                 return { id: parseInt(cachedId), username: cachedUsername };
             }
 
-            // Fallback default
-            return { id: 742461382, username: "Devotee" };
+            return { id: 742461382, username: "kajjmeran" };
         }
 
         const tgUser = resolveTelegramUser();
         const currentUserId = String(tgUser.id);
-        const telegramUsername = tgUser.username || "Devotee";
+        const telegramUsername = tgUser.username || "kajjmeran";
 
-        // Cache resolved credentials
         localStorage.setItem('cached_tg_user_id', currentUserId);
         localStorage.setItem('cached_tg_username', telegramUsername);
 
-        const STORAGE_KEY = `madame_lara_game_state_v6_${currentUserId}`;
+        const STORAGE_KEY = `madame_lara_game_state_v7_${currentUserId}`;
 
         const SUPABASE_URL = 'https://grudcdfhjeyxxeijjwsh.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_x7hwvc6cS5NkBcnz069Jrg_FUTZxwq6';
@@ -569,7 +568,9 @@
                 passive_income_rate: state.passiveIncomeRate,
                 has_autobot: state.hasAutoBot,
                 unlocked_contents: state.unlockedContents,
-                unlocked_badges: state.unlockedBadges
+                unlocked_badges: state.unlockedBadges,
+                extra_time: state.totalTouches,
+                active_multiplier: state.activeMultiplier
             };
 
             try {
@@ -582,7 +583,6 @@
             }
         }
 
-        // CANVA SUGGESTION 2: FETCH ON LOAD (Fetch from Supabase immediately on startup)
         async function fetchFromCloudOnLoad() {
             if (!supabaseClient) return;
             try {
@@ -595,13 +595,13 @@
                 if (data && !error) {
                     const cloudDiamonds = data.diamonds ?? data.total_points ?? 0;
                     
-                    // Merge highest numbers
                     state.diamonds = Math.max(state.diamonds, cloudDiamonds);
                     state.energy = Math.max(state.energy, data.energy ?? state.energy);
                     state.maxEnergy = Math.max(state.maxEnergy, data.max_energy ?? 500);
                     state.multitapLevel = Math.max(state.multitapLevel, data.multitap_level ?? 1);
                     state.energyLevel = Math.max(state.energyLevel, data.energy_level ?? 1);
                     state.rechargeLevel = Math.max(state.rechargeLevel, data.recharge_level ?? 1);
+                    state.totalTouches = Math.max(state.totalTouches, data.extra_time ?? 0);
                     state.hasAutoBot = data.has_autobot ?? state.hasAutoBot;
 
                     if (Array.isArray(data.unlocked_contents)) {
@@ -611,12 +611,12 @@
                         state.unlockedBadges = Array.from(new Set([...state.unlockedBadges, ...data.unlocked_badges]));
                     }
 
+                    recalculateCardBonuses();
                     processOfflineRegeneration(state);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                     updateUI();
                     console.log("✅ Successfully fetched latest state from Supabase on load!");
                 } else {
-                    // Initialize user record if non-existent
                     await syncToCloud();
                 }
             } catch (e) {
@@ -624,12 +624,10 @@
             }
         }
 
-        // CANVA SUGGESTION 3: BATCH SAVE INTERVAL (Every 5 seconds)
         setInterval(() => {
             syncToCloud();
-        }, 5000);
+        }, 4000);
 
-        // Immediate sync when application is closed or placed in background
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 syncToCloud();
@@ -654,18 +652,6 @@
                 profileTgId.innerText = `ID: ${currentUserId}`;
             }
         });
-
-        const startParam = tg?.initDataUnsafe?.start_param;
-        if (startParam) {
-            if (startParam.startsWith('ref_') && !state.claimedRef) {
-                state.claimedRef = true;
-                setTimeout(() => showToast("🎉 Welcome! You joined via a friend's invitation!"), 1000);
-            } else if (startParam === 'channel_verified' && !state.claimedChannelTask) {
-                state.claimedChannelTask = true;
-                state.diamonds += 1000;
-                setTimeout(() => showToast("🎉 Telegram Channel Task Verified! +1,000 💎 claimed!"), 1000);
-            }
-        }
 
         const demoCards = [
             { 
@@ -705,6 +691,29 @@
                 img: 'assets/lara_200_1.png' 
             }
         ];
+
+        function recalculateCardBonuses() {
+            let totalPassive = 0;
+            let totalMult = 1.0;
+
+            if (state.unlockedContents.includes('card_1')) {
+                totalPassive += 25;
+                totalMult += 0.10;
+            }
+            if (state.unlockedContents.includes('card_2')) {
+                totalPassive += 80;
+            }
+            if (state.unlockedContents.includes('card_3')) {
+                totalPassive += 250;
+                totalMult += 0.25;
+            }
+            if (state.unlockedContents.includes('card_4')) {
+                totalPassive += 750;
+            }
+
+            state.passiveIncomeRate = totalPassive;
+            state.activeMultiplier = totalMult;
+        }
 
         const badgesData = [
             { id: 'badge_chain', name: 'Chain of Obedience', req: '500 Total Taps', activeImg: 'assets/badge_chain_active.png', lockedImg: 'assets/badge_chain_locked.png' },
@@ -914,6 +923,7 @@
                     showToast("🤖 Auto-Obey Bot Activated!");
                     updateUI();
                     renderAutoBotCard();
+                    syncToCloud();
                 } else {
                     showToast("Not enough Diamonds! Needed: 100,000 💎");
                 }
@@ -932,6 +942,7 @@
             showToast(`🤖 Collected +${amount.toLocaleString('en-US')} 💎!`);
             updateUI();
             renderAutoBotCard();
+            syncToCloud();
         }
 
         function updateUI() {
@@ -1021,6 +1032,7 @@
                 state.multitapLevel++;
                 showToast(`Multitap upgraded to Level ${state.multitapLevel}! ✋`);
                 updateUI();
+                syncToCloud();
             } else {
                 showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('en-US')} 💎`);
             }
@@ -1035,6 +1047,7 @@
                 state.energy += 500;
                 showToast(`Energy capacity increased to ${state.maxEnergy}! 🔋`);
                 updateUI();
+                syncToCloud();
             } else {
                 showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('en-US')} 💎`);
             }
@@ -1048,6 +1061,7 @@
                 state.rechargeRate += 1;
                 showToast(`Recharge speed increased to +${state.rechargeRate}/s! ⚡`);
                 updateUI();
+                syncToCloud();
             } else {
                 showToast(`Not enough Diamonds! Needed: ${cost.toLocaleString('en-US')} 💎`);
             }
@@ -1149,16 +1163,15 @@
             if (paymentMethod === 'POINTS') {
                 if (state.diamonds >= card.cost) {
                     state.diamonds -= card.cost;
-                    state.unlockedContents.push(card.id);
-                    state.passiveIncomeRate += card.passiveBonus;
-                    showToast(`"${card.title}" unlocked! +${card.passiveBonus} 💎/hr passive! 🎉`);
+                    if (!state.unlockedContents.includes(card.id)) {
+                        state.unlockedContents.push(card.id);
+                    }
                     
-                    if (cardId === 'card_1') state.activeMultiplier += 0.10;
-                    if (cardId === 'card_2') { state.maxEnergy += 250; state.energy += 250; }
-                    if (cardId === 'card_3') { state.activeMultiplier += 0.25; }
-
+                    recalculateCardBonuses();
+                    showToast(`"${card.title}" unlocked! +${card.passiveBonus} 💎/hr passive! 🎉`);
                     updateUI();
                     renderPortalCards();
+                    syncToCloud();
                 } else {
                     showToast(`Not enough Diamonds! Needed: ${card.cost.toLocaleString('en-US')} 💎`);
                 }
@@ -1217,6 +1230,7 @@
                         showToast(`Task completed! +${reward.toLocaleString('en-US')} 💎 claimed.`);
                         updateUI();
                         renderTaskButtons();
+                        syncToCloud();
                     }
                 }, 1200);
             }
@@ -1261,6 +1275,10 @@
                 if (badge.id === 'badge_throne' && state.unlockedContents.includes('card_1')) isUnlocked = true;
                 if (badge.id === 'badge_secret' && state.unlockedContents.includes('card_2')) isUnlocked = true;
                 if (badge.id === 'badge_mystic' && state.hasAutoBot) isUnlocked = true;
+
+                if (isUnlocked && !state.unlockedBadges.includes(badge.id)) {
+                    state.unlockedBadges.push(badge.id);
+                }
 
                 const badgeEl = document.createElement('div');
                 badgeEl.className = `p-2.5 rounded-xl border text-center flex flex-col items-center justify-between cursor-pointer transition ${isUnlocked ? 'bg-[#1e1a0e] border-[#d4af37]' : 'bg-[#141414] border-[#222]'}`;
