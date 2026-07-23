@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 try:
     from database import get_or_create_slave, add_energy, add_diamonds, activate_autobot, unlock_content
 except ImportError:
-    # Fallback if database helper functions are missing
     from database import get_or_create_slave, add_energy
 
 load_dotenv()
@@ -19,7 +18,7 @@ if not TOKEN:
     raise ValueError("CRITICAL ERROR: Missing TELEGRAM_BOT_TOKEN in environment variables.")
 
 bot = telebot.TeleBot(TOKEN)
-VERCEL_WEB_APP_URL = "https://madamelara-game.vercel.app"
+VERCEL_WEB_APP_URL = os.getenv("VERCEL_WEB_APP_URL", "https://madamelara-game.vercel.app")
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -55,7 +54,9 @@ def handle_get_invoice_link(message):
             "pack_15000": ("Medium Box (15,000 Diamonds)", 60),
             "pack_62500": ("Heavy Chest (62,500 Diamonds)", 250),
             "pack_300000": ("VIP Whale Pack (300,000 Diamonds)", 1000),
-            "autobot_pass": ("Auto-Obey Bot Activation", 100),
+            "autobot_pass": ("Auto-Obey Bot Activation", 400),
+            "energy_5": ("5 Energy Refill", 15),
+            "energy_10": ("10 Energy Refill", 30)
         }
         if payload in prices_map:
             title, amount = prices_map[payload]
@@ -77,8 +78,8 @@ def handle_get_invoice_link(message):
             except Exception as e:
                 bot.send_message(message.chat.id, f"Error generating link: {e}")
                 return
-        elif payload.startswith("content_"):
-            card_id = payload.replace("content_", "")
+        elif payload.startswith("content_") or payload.startswith("unlock_content_"):
+            card_id = payload.replace("unlock_content_", "").replace("content_", "").strip()
             card_prices = {
                 "card_1": ("First Encounter", 10),
                 "card_2": ("Sharp Glances", 35),
@@ -120,6 +121,7 @@ def send_welcome(message):
     if len(text_parts) > 1:
         payload = text_parts[1].strip()
         
+        # Diamond Packs
         if payload == "buy_pack_3750":
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -180,8 +182,8 @@ def send_welcome(message):
             )
             return
 
-        elif payload.startswith("unlock_content_"):
-            card_id = payload.replace("unlock_content_", "").strip()
+        elif payload.startswith("unlock_content_") or payload.startswith("content_"):
+            card_id = payload.replace("unlock_content_", "").replace("content_", "").strip()
             
             card_prices = {
                 "card_1": ("First Encounter", 10),
@@ -212,6 +214,18 @@ def send_welcome(message):
                 provider_token="",
                 currency="XTR",
                 prices=[types.LabeledPrice(label="5 Energy", amount=15)]
+            )
+            return
+
+        elif payload == "buy_energy_10":
+            bot.send_invoice(
+                chat_id=message.chat.id,
+                title="10 Energy Refill",
+                description="Instantly refill 10 Energy to continue serving Madame Lara.",
+                invoice_payload="db_energy_10",
+                provider_token="",
+                currency="XTR",
+                prices=[types.LabeledPrice(label="10 Energy", amount=30)]
             )
             return
 
@@ -279,6 +293,7 @@ def send_welcome(message):
                 )
             return
 
+    # Standard Welcome Message (No duplicate inline play button)
     welcome_text = (
         "👑 **Welcome to Madame Lara's Portal!** 👑\n\n"
         "This is the exclusive domain where Madame Lara rewards her most loyal followers. "
@@ -332,6 +347,9 @@ def got_payment(message):
     elif payload == "db_energy_5":
         if 'add_energy' in globals(): add_energy(telegram_id, 5)
         bot.send_message(message.chat.id, "⚡ **Payment Successful!** 5 Energy refilled.")
+    elif payload == "db_energy_10":
+        if 'add_energy' in globals(): add_energy(telegram_id, 10)
+        bot.send_message(message.chat.id, "⚡ **Payment Successful!** 10 Energy refilled.")
 
 if __name__ == "__main__":
     print("Madame Lara's Telegram Bot engine is initialized and actively listening...")
