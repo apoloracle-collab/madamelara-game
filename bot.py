@@ -20,6 +20,9 @@ if not TOKEN:
 bot = telebot.TeleBot(TOKEN)
 VERCEL_WEB_APP_URL = os.getenv("VERCEL_WEB_APP_URL", "https://madamelara-game.vercel.app")
 
+# ==========================================================================
+# HEALTH CHECK SERVER FOR RENDER UPTIME
+# ==========================================================================
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -43,27 +46,29 @@ def run_health_server():
 server_thread = threading.Thread(target=run_health_server, daemon=True)
 server_thread.start()
 
+# ==========================================================================
+# INVOICE LINK GENERATOR (TEST MODE: ALL PRICES SET TO 1 STAR)
+# ==========================================================================
 @bot.message_handler(commands=['get_invoice_link'])
 def handle_get_invoice_link(message):
     telegram_id = message.from_user.id
     text_parts = message.text.strip().split()
     if len(text_parts) > 1:
         payload = text_parts[1].strip()
+        # TEST MODU: Tüm paketlerin fiyatı geçici olarak 1 Yıldız yapıldı
         prices_map = {
-            "pack_3750": ("Starter Bag (3,750 Diamonds)", 15),
-            "pack_15000": ("Medium Box (15,000 Diamonds)", 60),
-            "pack_62500": ("Heavy Chest (62,500 Diamonds)", 250),
-            "pack_300000": ("VIP Whale Pack (300,000 Diamonds)", 1000),
-            "autobot_pass": ("Auto-Obey Bot Activation", 400),
-            "energy_5": ("5 Energy Refill", 15),
-            "energy_10": ("10 Energy Refill", 30)
+            "pack_3750": ("Starter Bag (3,750 Diamonds)", 1),
+            "pack_15000": ("Medium Box (15,000 Diamonds)", 1),
+            "pack_62500": ("Heavy Chest (62,500 Diamonds)", 1),
+            "pack_300000": ("VIP Whale Pack (300,000 Diamonds)", 1),
+            "autobot_pass": ("Auto-Obey Bot Activation", 1),
         }
         if payload in prices_map:
             title, amount = prices_map[payload]
             try:
                 link = bot.create_invoice_link(
                     title,
-                    "Secure Telegram Stars Payment",
+                    "Secure Telegram Stars Payment (Test)",
                     payload,
                     "",
                     "XTR",
@@ -81,12 +86,12 @@ def handle_get_invoice_link(message):
         elif payload.startswith("content_") or payload.startswith("unlock_content_"):
             card_id = payload.replace("unlock_content_", "").replace("content_", "").strip()
             card_prices = {
-                "card_1": ("First Encounter", 10),
-                "card_2": ("Sharp Glances", 35),
-                "card_3": ("Leather Elegance", 100),
-                "card_4": ("Throne Queen", 300)
+                "card_1": ("First Encounter", 1),
+                "card_2": ("Sharp Glances", 1),
+                "card_3": ("Leather Elegance", 1),
+                "card_4": ("Throne Queen", 1)
             }
-            title, stars_cost = card_prices.get(card_id, ("Exclusive Content", 50))
+            title, stars_cost = card_prices.get(card_id, ("Exclusive Content", 1))
             try:
                 link = bot.create_invoice_link(
                     f"Secret Content: {title}",
@@ -106,6 +111,9 @@ def handle_get_invoice_link(message):
                 bot.send_message(message.chat.id, f"Error generating link: {e}")
                 return
 
+# ==========================================================================
+# /START COMMAND & PAYLOAD ROUTER (TEST MODE: ALL INVOICES = 1 STAR)
+# ==========================================================================
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     telegram_id = message.from_user.id
@@ -121,7 +129,7 @@ def send_welcome(message):
     if len(text_parts) > 1:
         payload = text_parts[1].strip()
         
-        # Diamond Packs
+        # --- STARS PACK INVOICES (TEST MODE: 1 STAR EACH) ---
         if payload == "buy_pack_3750":
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -130,7 +138,7 @@ def send_welcome(message):
                 invoice_payload="pack_3750",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="3,750 Diamonds", amount=15)]
+                prices=[types.LabeledPrice(label="3,750 Diamonds [TEST]", amount=1)]
             )
             return
 
@@ -142,7 +150,7 @@ def send_welcome(message):
                 invoice_payload="pack_15000",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="15,000 Diamonds", amount=60)]
+                prices=[types.LabeledPrice(label="15,000 Diamonds [TEST]", amount=1)]
             )
             return
 
@@ -154,7 +162,7 @@ def send_welcome(message):
                 invoice_payload="pack_62500",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="62,500 Diamonds", amount=250)]
+                prices=[types.LabeledPrice(label="62,500 Diamonds [TEST]", amount=1)]
             )
             return
 
@@ -162,11 +170,11 @@ def send_welcome(message):
             bot.send_invoice(
                 chat_id=message.chat.id,
                 title="VIP Whale Pack (300,000 Diamonds)",
-                description="Heavy VIP Pack: 300,000 Diamonds with +20% Bonus included!",
+                description="Heavy VIP Pack: 300,000 Diamonds included!",
                 invoice_payload="pack_300000",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="300,000 Diamonds", amount=1000)]
+                prices=[types.LabeledPrice(label="300,000 Diamonds [TEST]", amount=1)]
             )
             return
 
@@ -174,25 +182,26 @@ def send_welcome(message):
             bot.send_invoice(
                 chat_id=message.chat.id,
                 title="Auto-Obey Bot Activation",
-                description="Activate Auto-Obey Bot to mine diamonds continuously while you sleep (12-Hour Shift).",
+                description="Activate Auto-Obey Bot to mine diamonds continuously (12-Hour Shift).",
                 invoice_payload="autobot_pass",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="Auto-Obey Bot", amount=400)]
+                prices=[types.LabeledPrice(label="Auto-Obey Bot [TEST]", amount=1)]
             )
             return
 
+        # --- SECRET CONTENT CARDS (TEST MODE: 1 STAR EACH) ---
         elif payload.startswith("unlock_content_") or payload.startswith("content_"):
             card_id = payload.replace("unlock_content_", "").replace("content_", "").strip()
             
             card_prices = {
-                "card_1": ("First Encounter", 10),
-                "card_2": ("Sharp Glances", 35),
-                "card_3": ("Leather Elegance", 100),
-                "card_4": ("Throne Queen", 300)
+                "card_1": ("First Encounter", 1),
+                "card_2": ("Sharp Glances", 1),
+                "card_3": ("Leather Elegance", 1),
+                "card_4": ("Throne Queen", 1)
             }
 
-            title, stars_cost = card_prices.get(card_id, ("Exclusive Secret Content", 50))
+            title, stars_cost = card_prices.get(card_id, ("Exclusive Secret Content", 1))
 
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -201,7 +210,7 @@ def send_welcome(message):
                 invoice_payload=f"content_{card_id}",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label=title, amount=stars_cost)]
+                prices=[types.LabeledPrice(label=f"{title} [TEST]", amount=stars_cost)]
             )
             return
 
@@ -213,22 +222,11 @@ def send_welcome(message):
                 invoice_payload="db_energy_5",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="5 Energy", amount=15)]
+                prices=[types.LabeledPrice(label="5 Energy [TEST]", amount=1)]
             )
             return
 
-        elif payload == "buy_energy_10":
-            bot.send_invoice(
-                chat_id=message.chat.id,
-                title="10 Energy Refill",
-                description="Instantly refill 10 Energy to continue serving Madame Lara.",
-                invoice_payload="db_energy_10",
-                provider_token="",
-                currency="XTR",
-                prices=[types.LabeledPrice(label="10 Energy", amount=30)]
-            )
-            return
-
+        # --- REFERRAL LINK ROUTER ---
         elif payload.startswith("ref_"):
             referrer_str = payload.replace("ref_", "").strip()
             if referrer_str.isdigit():
@@ -251,14 +249,17 @@ def send_welcome(message):
 
             bot.send_message(
                 message.chat.id,
-                "🎉 **Welcome!** You joined via a friend's referral link! Tap the **Play** button at the bottom of the screen to start playing!",
+                "🎉 **Welcome!** You joined via a friend's referral link!\n\n"
+                "👇 Tap the **Play** button at the bottom of your screen to open the app!",
                 parse_mode="Markdown",
                 reply_markup=markup
             )
             return
 
+        # --- TELEGRAM CHANNEL VERIFICATION ---
         elif payload == "check_telegram_channel":
             channel_id = os.getenv("TELEGRAM_CHANNEL_ID", "@laragameportal")
+            channel_invite_link = "https://t.me/+XrzPL2PXnYxkNjk0"
             try:
                 member = bot.get_chat_member(channel_id, telegram_id)
                 if member.status in ['member', 'administrator', 'creator']:
@@ -278,22 +279,28 @@ def send_welcome(message):
                         "Please join the channel below, then try again!",
                         parse_mode="Markdown",
                         reply_markup=types.InlineKeyboardMarkup().add(
-                            types.InlineKeyboardButton("📢 Join Channel", url="https://t.me/+XrzPL2PXnYxkNjk0"),
+                            types.InlineKeyboardButton("📢 Join Channel", url=channel_invite_link),
                             types.InlineKeyboardButton("🔄 Verify Again", url="https://t.me/madamelara_bot?start=check_telegram_channel")
                         )
                     )
             except Exception as e:
-                print(f"Chat member check fallback: {e}")
-                if 'add_diamonds' in globals():
-                    add_diamonds(telegram_id, 1000)
+                print(f"Chat member check exception: {e}")
                 bot.send_message(
                     message.chat.id,
-                    "🎉 **Task Verified!** +1,000 Diamonds credited to your vault!",
-                    parse_mode="Markdown"
+                    "⚠️ **Verification Pending**\n\n"
+                    "Please make sure you have joined the channel, then tap 'Verify Again'.",
+                    parse_mode="Markdown",
+                    reply_markup=types.InlineKeyboardMarkup().add(
+                        types.InlineKeyboardButton("📢 Join Channel", url=channel_invite_link),
+                        types.InlineKeyboardButton("🔄 Verify Again", url="https://t.me/madamelara_bot?start=check_telegram_channel")
+                    )
                 )
             return
 
     # Standard Welcome Message (No duplicate inline play button)
+            return
+
+    # --- STANDARD WELCOME MESSAGE ---
     welcome_text = (
         "👑 **Welcome to Madame Lara's Portal!** 👑\n\n"
         "This is the exclusive domain where Madame Lara rewards her most loyal followers. "
@@ -302,7 +309,7 @@ def send_welcome(message):
         "• **Tap & Mine:** Collect diamonds with every touch and upgrade your power.\n"
         "• **Auto Bot:** Automate your earnings while away.\n"
         "• **Secret Gallery:** Access exclusive, private media cards.\n\n"
-        "👇 Tap the **Play** button at the bottom of your screen to open the app!"
+        "👇 Tap the **Play 👑** button at the bottom of your screen to open the app!"
     )
     
     markup = types.InlineKeyboardMarkup()
@@ -311,6 +318,9 @@ def send_welcome(message):
     
     bot.send_message(message.chat.id, welcome_text, parse_mode="Markdown", reply_markup=markup)
 
+# ==========================================================================
+# PAYMENT HANDLERS
+# ==========================================================================
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def checkout(pre_checkout_query):
     bot.answer_pre_checkout_query(
@@ -340,17 +350,14 @@ def got_payment(message):
     elif payload == "autobot_pass":
         if 'activate_autobot' in globals(): activate_autobot(telegram_id)
         bot.send_message(message.chat.id, "🤖 **Auto-Obey Bot Activated!** Your bot is now mining diamonds for you in the background.")
-    elif payload.startswith("content_"):
-        card_id = payload.replace("content_", "")
+    elif payload.startswith("content_") or payload.startswith("unlock_content_"):
+        card_id = payload.replace("unlock_content_", "").replace("content_", "").strip()
         if 'unlock_content' in globals(): unlock_content(telegram_id, card_id)
         bot.send_message(message.chat.id, f"🔓 **Content Unlocked!** Card '{card_id}' is now unlocked in your Secret Portal.")
     elif payload == "db_energy_5":
         if 'add_energy' in globals(): add_energy(telegram_id, 5)
         bot.send_message(message.chat.id, "⚡ **Payment Successful!** 5 Energy refilled.")
-    elif payload == "db_energy_10":
-        if 'add_energy' in globals(): add_energy(telegram_id, 10)
-        bot.send_message(message.chat.id, "⚡ **Payment Successful!** 10 Energy refilled.")
 
 if __name__ == "__main__":
-    print("Madame Lara's Telegram Bot engine is initialized and actively listening...")
+    print("Madame Lara's Telegram Bot engine is initialized and actively listening (1-Star Test Mode Active)...")
     bot.infinity_polling(skip_pending=True)
