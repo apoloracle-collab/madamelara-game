@@ -47,7 +47,7 @@ server_thread = threading.Thread(target=run_health_server, daemon=True)
 server_thread.start()
 
 # ==========================================================================
-# INVOICE LINK GENERATOR (TEST MODE: ALL PRICES SET TO 1 STAR)
+# INVOICE LINK GENERATOR (REAL STARS PRICES)
 # ==========================================================================
 @bot.message_handler(commands=['get_invoice_link'])
 def handle_get_invoice_link(message):
@@ -55,20 +55,19 @@ def handle_get_invoice_link(message):
     text_parts = message.text.strip().split()
     if len(text_parts) > 1:
         payload = text_parts[1].strip()
-        # TEST MODU: Tüm paketlerin fiyatı geçici olarak 1 Yıldız yapıldı
         prices_map = {
-            "pack_3750": ("Starter Bag (3,750 Diamonds)", 1),
-            "pack_15000": ("Medium Box (15,000 Diamonds)", 1),
-            "pack_62500": ("Heavy Chest (62,500 Diamonds)", 1),
-            "pack_300000": ("VIP Whale Pack (300,000 Diamonds)", 1),
-            "autobot_pass": ("Auto-Obey Bot Activation", 1),
+            "pack_3750": ("Starter Bag (3,750 Diamonds)", 15),
+            "pack_15000": ("Medium Box (15,000 Diamonds)", 60),
+            "pack_62500": ("Heavy Chest (62,500 Diamonds)", 250),
+            "pack_300000": ("VIP Whale Pack (300,000 Diamonds)", 1200),
+            "autobot_pass": ("Auto-Obey Bot Activation", 400),
         }
         if payload in prices_map:
             title, amount = prices_map[payload]
             try:
                 link = bot.create_invoice_link(
                     title,
-                    "Secure Telegram Stars Payment (Test)",
+                    f"Secure Telegram Stars Payment ({amount} Stars)",
                     payload,
                     "",
                     "XTR",
@@ -86,12 +85,12 @@ def handle_get_invoice_link(message):
         elif payload.startswith("content_") or payload.startswith("unlock_content_"):
             card_id = payload.replace("unlock_content_", "").replace("content_", "").strip()
             card_prices = {
-                "card_1": ("First Encounter", 1),
-                "card_2": ("Sharp Glances", 1),
-                "card_3": ("Leather Elegance", 1),
-                "card_4": ("Throne Queen", 1)
+                "card_1": ("First Encounter", 10),
+                "card_2": ("Sharp Glances", 35),
+                "card_3": ("Leather Elegance", 100),
+                "card_4": ("Throne Queen", 300)
             }
-            title, stars_cost = card_prices.get(card_id, ("Exclusive Content", 1))
+            title, stars_cost = card_prices.get(card_id, ("Exclusive Content", 50))
             try:
                 link = bot.create_invoice_link(
                     f"Secret Content: {title}",
@@ -112,7 +111,7 @@ def handle_get_invoice_link(message):
                 return
 
 # ==========================================================================
-# /START COMMAND & PAYLOAD ROUTER (TEST MODE: ALL INVOICES = 1 STAR)
+# /START COMMAND & PAYLOAD ROUTER (EXACT STARS PRICES)
 # ==========================================================================
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -129,7 +128,7 @@ def send_welcome(message):
     if len(text_parts) > 1:
         payload = text_parts[1].strip()
         
-        # --- STARS PACK INVOICES (TEST MODE: 1 STAR EACH) ---
+        # --- STARS PACK INVOICES ---
         if payload == "buy_pack_3750":
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -138,7 +137,7 @@ def send_welcome(message):
                 invoice_payload="pack_3750",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="3,750 Diamonds [TEST]", amount=1)]
+                prices=[types.LabeledPrice(label="3,750 Diamonds", amount=15)]
             )
             return
 
@@ -150,7 +149,7 @@ def send_welcome(message):
                 invoice_payload="pack_15000",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="15,000 Diamonds [TEST]", amount=1)]
+                prices=[types.LabeledPrice(label="15,000 Diamonds", amount=60)]
             )
             return
 
@@ -162,7 +161,7 @@ def send_welcome(message):
                 invoice_payload="pack_62500",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="62,500 Diamonds [TEST]", amount=1)]
+                prices=[types.LabeledPrice(label="62,500 Diamonds", amount=250)]
             )
             return
 
@@ -174,7 +173,7 @@ def send_welcome(message):
                 invoice_payload="pack_300000",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="300,000 Diamonds [TEST]", amount=1)]
+                prices=[types.LabeledPrice(label="300,000 Diamonds", amount=1200)]
             )
             return
 
@@ -186,22 +185,22 @@ def send_welcome(message):
                 invoice_payload="autobot_pass",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="Auto-Obey Bot [TEST]", amount=1)]
+                prices=[types.LabeledPrice(label="Auto-Obey Bot", amount=400)]
             )
             return
 
-        # --- SECRET CONTENT CARDS (TEST MODE: 1 STAR EACH) ---
+        # --- SECRET CONTENT CARDS (MATCHING GAME PRICES) ---
         elif payload.startswith("unlock_content_") or payload.startswith("content_"):
             card_id = payload.replace("unlock_content_", "").replace("content_", "").strip()
             
             card_prices = {
-                "card_1": ("First Encounter", 1),
-                "card_2": ("Sharp Glances", 1),
-                "card_3": ("Leather Elegance", 1),
-                "card_4": ("Throne Queen", 1)
+                "card_1": ("First Encounter", 10),
+                "card_2": ("Sharp Glances", 35),
+                "card_3": ("Leather Elegance", 100),
+                "card_4": ("Throne Queen", 300)
             }
 
-            title, stars_cost = card_prices.get(card_id, ("Exclusive Secret Content", 1))
+            title, stars_cost = card_prices.get(card_id, ("Exclusive Secret Content", 50))
 
             bot.send_invoice(
                 chat_id=message.chat.id,
@@ -210,7 +209,7 @@ def send_welcome(message):
                 invoice_payload=f"content_{card_id}",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label=f"{title} [TEST]", amount=stars_cost)]
+                prices=[types.LabeledPrice(label=title, amount=stars_cost)]
             )
             return
 
@@ -222,7 +221,7 @@ def send_welcome(message):
                 invoice_payload="db_energy_5",
                 provider_token="",
                 currency="XTR",
-                prices=[types.LabeledPrice(label="5 Energy [TEST]", amount=1)]
+                prices=[types.LabeledPrice(label="5 Energy", amount=1)]
             )
             return
 
@@ -297,9 +296,6 @@ def send_welcome(message):
                 )
             return
 
-    # Standard Welcome Message (No duplicate inline play button)
-            return
-
     # --- STANDARD WELCOME MESSAGE ---
     welcome_text = (
         "👑 **Welcome to Madame Lara's Portal!** 👑\n\n"
@@ -358,6 +354,14 @@ def got_payment(message):
         if 'add_energy' in globals(): add_energy(telegram_id, 5)
         bot.send_message(message.chat.id, "⚡ **Payment Successful!** 5 Energy refilled.")
 
+# ==========================================================================
+# BOT STARTUP & POLLING WITH RETRY PROTECTION
+# ==========================================================================
 if __name__ == "__main__":
-    print("Madame Lara's Telegram Bot engine is initialized and actively listening (1-Star Test Mode Active)...")
-    bot.infinity_polling(skip_pending=True)
+    print("Madame Lara's Telegram Bot engine is initialized and actively listening...")
+    while True:
+        try:
+            bot.infinity_polling(skip_pending=True, timeout=30, long_polling_timeout=30)
+        except Exception as e:
+            print(f"Polling exception caught: {e}. Retrying in 5 seconds...")
+            time.sleep(5)
