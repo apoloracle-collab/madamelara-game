@@ -181,9 +181,9 @@ def unlock_content(telegram_id: int, content_id: str, cost: int = 0, payment_typ
                 return {"success": False, "message": "Insufficient Diamonds balance!"}
             
             new_diamonds = current_diamonds - cost
+            # Sadece cüzdan elmasını güncelliyoruz, total_points koruma altında kalıyor
             supabase.table("slaves").update({
-                "diamonds": new_diamonds,
-                "total_points": new_diamonds
+                "diamonds": new_diamonds
             }).eq("telegram_id", telegram_id).execute()
 
         unlocked.append(content_id)
