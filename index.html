@@ -298,7 +298,7 @@
                             </div>
                         </div>
                         <button id="tg-task-btn" onclick="claimSocialTask('telegram', 1000, 'https://t.me/+XrzPL2PXnYxkNjk0')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
-                            Claim
+                            Join Channel
                         </button>
                     </div>
 
@@ -312,8 +312,8 @@
                                 <div class="text-[10px] text-yellow-400 font-mono mt-0.5">+1,000 💎</div>
                             </div>
                         </div>
-                        <button id="x-task-btn" onclick="claimSocialTask('x', 1000, 'https://x.com/laragameportal')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
-                            Claim
+                        <button id="x-task-btn" onclick="claimSocialTask('x', 1000, 'https://x.com')" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition">
+                            Follow X
                         </button>
                     </div>
                 </div>
@@ -327,9 +327,12 @@
                         </p>
 
                         <div class="flex space-x-2">
-                            <input id="ref-link-input" type="text" readonly value="https://t.me/madamelara_bot?start=ref_742461382" class="bg-[#222] border border-[#333] text-gray-300 text-xs rounded-xl px-3 py-2 w-full font-mono">
-                            <button onclick="copyRefLink()" class="bg-[#d4af37] hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-2 rounded-xl shrink-0 transition">
-                                Copy
+                            <button onclick="shareReferralLink()" class="flex-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-extrabold py-2 rounded-xl text-xs shadow flex items-center justify-center space-x-1.5">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Invite Friend</span>
+                            </button>
+                            <button onclick="copyRefLink()" class="bg-[#222] hover:bg-[#333] border border-[#444] text-white font-bold px-3 py-2 rounded-xl text-xs transition">
+                                <i class="fa-solid fa-copy"></i>
                             </button>
                         </div>
                     </div>
@@ -457,17 +460,18 @@
             }
 
             const cachedId = localStorage.getItem('cached_tg_user_id');
-            const cachedUsername = localStorage.getItem('cached_tg_username') || "Devotee";
+            const cachedUsername = localStorage.getItem('cached_tg_username');
             if (cachedId) {
-                return { id: parseInt(cachedId), username: cachedUsername };
+                return { id: parseInt(cachedId), username: cachedUsername || `Devotee_${cachedId.slice(-4)}` };
             }
 
-            return { id: 742461382, username: "kajjmeran" };
+            const randomFallbackId = Math.floor(100000000 + Math.random() * 900000000);
+            return { id: randomFallbackId, username: `Devotee_${String(randomFallbackId).slice(-4)}` };
         }
 
         const tgUser = resolveTelegramUser();
         const currentUserId = String(tgUser.id);
-        const telegramUsername = tgUser.username || "kajjmeran";
+        const telegramUsername = tgUser.username ? tgUser.username.replace('@', '') : (tgUser.first_name || `Devotee_${currentUserId.slice(-4)}`);
 
         localStorage.setItem('cached_tg_user_id', currentUserId);
         localStorage.setItem('cached_tg_username', telegramUsername);
@@ -515,7 +519,6 @@
             const lastActive = loadedState.lastActiveTimestamp || now;
             const elapsedSec = Math.max(0, Math.floor((now - lastActive) / 1000));
 
-            // Reset daily boosts if date changed
             const todayStr = getTodayDateString();
             if (loadedState.dailyBoostDate !== todayStr) {
                 loadedState.dailyTankCount = 3;
@@ -524,13 +527,11 @@
             }
 
             if (elapsedSec > 0) {
-                // Offline Energy regeneration
                 if (loadedState.energy < loadedState.maxEnergy) {
                     const energyAdded = elapsedSec * (loadedState.rechargeRate || 1);
                     loadedState.energy = Math.min(loadedState.maxEnergy, loadedState.energy + energyAdded);
                 }
 
-                // Offline Passive Income accrual
                 if (loadedState.passiveIncomeRate > 0) {
                     const passiveGained = Math.floor((loadedState.passiveIncomeRate / 3600) * elapsedSec);
                     if (passiveGained > 0) {
@@ -572,7 +573,6 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {}
 
-            // Encode daily boost state AND timestamp into unlockedBadges array to persist across devices
             const todayStr = getTodayDateString();
             const cleanBadges = state.unlockedBadges.filter(b => !b.startsWith('__boost_'));
             cleanBadges.push(`__boost_tank_${state.dailyTankCount}`);
@@ -584,7 +584,6 @@
                 telegram_id: parseInt(currentUserId),
                 username: telegramUsername,
                 diamonds: Math.floor(state.diamonds),
-                total_points: Math.floor(state.diamonds),
                 energy: Math.floor(state.energy),
                 max_energy: state.maxEnergy,
                 multitap_level: state.multitapLevel,
@@ -618,15 +617,14 @@
                     .maybeSingle();
 
                 if (data && !error) {
-                    // Supabase cloud data is absolute source of truth
-                    const cloudDiamonds = data.diamonds ?? data.total_points ?? 0;
+                    const cloudDiamonds = data.diamonds ?? 0;
                     state.diamonds = cloudDiamonds;
                     
                     state.maxEnergy = data.max_energy ?? 500;
                     state.multitapLevel = data.multitap_level ?? 1;
                     state.energyLevel = data.energy_level ?? 1;
                     state.rechargeLevel = data.recharge_level ?? 1;
-                    state.rechargeRate = state.rechargeLevel; // Calculate recharge rate from level
+                    state.rechargeRate = state.rechargeLevel;
                     state.totalTouches = data.extra_time ?? 0;
                     state.hasAutoBot = data.has_autobot ?? state.hasAutoBot;
 
@@ -634,7 +632,6 @@
                         state.unlockedContents = data.unlocked_contents;
                     }
 
-                    // Decode daily boosts, badges, and cloud timestamp
                     let cloudSavedTime = Date.now();
                     if (Array.isArray(data.unlocked_badges)) {
                         const todayStr = getTodayDateString();
@@ -670,17 +667,14 @@
                         }
                     }
 
-                    // Calculate offline energy recovery between saved cloud timestamp and current time
                     const baseEnergy = data.energy ?? 500;
                     const now = Date.now();
                     const elapsedSec = Math.max(0, Math.floor((now - cloudSavedTime) / 1000));
                     const energyAdded = elapsedSec * (state.rechargeRate || 1);
                     state.energy = Math.min(state.maxEnergy, baseEnergy + energyAdded);
 
-                    // Recalculate bonuses from unlocked cards
                     recalculateCardBonuses();
 
-                    // Calculate offline passive income from cloud time gap
                     if (state.passiveIncomeRate > 0 && elapsedSec > 0) {
                         const passiveGained = Math.floor((state.passiveIncomeRate / 3600) * elapsedSec);
                         if (passiveGained > 0) {
@@ -694,7 +688,7 @@
                     state.lastActiveTimestamp = now;
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
                     updateUI();
-                    console.log("✅ Fetched state from Supabase on load! Energy restored:", state.energy);
+                    console.log("✅ Fetched state from Supabase on load!");
                 } else {
                     await syncToCloud();
                 }
@@ -720,11 +714,6 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             fetchFromCloudOnLoad();
-
-            const refInput = document.getElementById('ref-link-input');
-            if (refInput) {
-                refInput.value = `https://t.me/madamelara_bot?start=ref_${currentUserId}`;
-            }
 
             const profileTgId = document.getElementById('profile-tg-id');
             if (profileTgId) {
@@ -1275,7 +1264,7 @@
                     tgBtn.innerText = 'Claimed ✅';
                     tgBtn.className = 'bg-neutral-800 text-gray-400 font-bold text-xs px-3.5 py-1.5 rounded-xl cursor-not-allowed';
                 } else {
-                    tgBtn.innerText = 'Claim';
+                    tgBtn.innerText = 'Join Channel';
                     tgBtn.className = 'bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition';
                 }
             }
@@ -1286,24 +1275,38 @@
                     xBtn.innerText = 'Claimed ✅';
                     xBtn.className = 'bg-neutral-800 text-gray-400 font-bold text-xs px-3.5 py-1.5 rounded-xl cursor-not-allowed';
                 } else {
-                    xBtn.innerText = 'Claim';
+                    xBtn.innerText = 'Follow X';
                     xBtn.className = 'bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-xs px-3.5 py-1.5 rounded-xl transition';
                 }
             }
         }
 
+        let xTaskTimer = null;
         function claimSocialTask(taskId, reward, link) {
             if (taskId === 'telegram') {
                 if (state.claimedChannelTask) {
                     showToast("Telegram channel task already claimed! ✅");
                     return;
                 }
-                const deepLinkUrl = "https://t.me/madamelara_bot?start=check_telegram_channel";
+                const channelUrl = "https://t.me/+XrzPL2PXnYxkNjk0";
                 if (tg && tg.openTelegramLink) {
-                    tg.openTelegramLink(deepLinkUrl);
-                    if (tg.close) setTimeout(() => tg.close(), 100);
+                    tg.openTelegramLink(channelUrl);
                 } else {
-                    window.open(deepLinkUrl, '_blank');
+                    window.open(channelUrl, '_blank');
+                }
+                
+                const btn = document.getElementById('tg-task-btn');
+                if (btn) {
+                    btn.innerText = "Verify Membership";
+                    btn.className = "bg-amber-500 text-black font-extrabold text-xs px-3.5 py-1.5 rounded-xl transition shadow";
+                    btn.onclick = () => {
+                        const deepLinkUrl = "https://t.me/madamelara_bot?start=check_telegram_channel";
+                        if (tg && tg.openTelegramLink) {
+                            tg.openTelegramLink(deepLinkUrl);
+                        } else {
+                            window.open(deepLinkUrl, '_blank');
+                        }
+                    };
                 }
             } else if (taskId === 'x') {
                 if (state.claimedXTask) {
@@ -1311,26 +1314,57 @@
                     return;
                 }
                 window.open(link, '_blank');
-                setTimeout(() => {
-                    if (!state.claimedXTask) {
-                        state.claimedXTask = true;
-                        state.diamonds += reward;
-                        showToast(`Task completed! +${reward.toLocaleString('en-US')} 💎 claimed.`);
-                        updateUI();
-                        renderTaskButtons();
-                        syncToCloud();
+
+                const btn = document.getElementById('x-task-btn');
+                if (!btn || btn.disabled) return;
+
+                let countdown = 12;
+                btn.disabled = true;
+                btn.className = "bg-gray-700 text-gray-300 font-bold text-xs px-3.5 py-1.5 rounded-xl cursor-not-allowed";
+
+                if (xTaskTimer) clearInterval(xTaskTimer);
+                xTaskTimer = setInterval(() => {
+                    btn.innerText = `Checking (${countdown}s)`;
+                    countdown--;
+
+                    if (countdown < 0) {
+                        clearInterval(xTaskTimer);
+                        btn.disabled = false;
+                        btn.innerText = "Claim +1,000 💎";
+                        btn.className = "bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs px-3.5 py-1.5 rounded-xl shadow transition";
+                        btn.onclick = () => {
+                            state.claimedXTask = true;
+                            state.diamonds += reward;
+                            showToast(`Task completed! +${reward.toLocaleString('en-US')} 💎 claimed.`);
+                            updateUI();
+                            renderTaskButtons();
+                            syncToCloud();
+                        };
                     }
-                }, 1200);
+                }, 1000);
+            }
+        }
+
+        function shareReferralLink() {
+            const link = `https://t.me/madamelara_bot?start=ref_${currentUserId}`;
+            const text = "👑 Join me in Madame Lara's Tap-to-Earn Vault and claim free bonus diamonds!";
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(shareUrl);
+            } else {
+                window.open(shareUrl, '_blank');
             }
         }
 
         function copyRefLink() {
-            const input = document.getElementById('ref-link-input');
-            if (input) {
-                input.select();
-                document.execCommand('copy');
-                showToast("Referral link copied!");
-            }
+            const link = `https://t.me/madamelara_bot?start=ref_${currentUserId}`;
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = link;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast("Referral link copied to clipboard! 📋");
         }
 
         function claimPassiveIncome() {
