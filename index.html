@@ -583,7 +583,7 @@
             const payload = {
                 telegram_id: parseInt(currentUserId),
                 username: telegramUsername,
-                diamonds: Math.floor(state.diamonds),
+                total_points: Math.floor(state.diamonds),
                 energy: Math.floor(state.energy),
                 max_energy: state.maxEnergy,
                 multitap_level: state.multitapLevel,
@@ -617,7 +617,7 @@
                     .maybeSingle();
 
                 if (data && !error) {
-                    const cloudDiamonds = data.diamonds ?? 0;
+                    const cloudDiamonds = data.total_points ?? data.diamonds ?? 0;
                     state.diamonds = cloudDiamonds;
                     
                     state.maxEnergy = data.max_energy ?? 500;
